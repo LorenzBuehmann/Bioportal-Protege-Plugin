@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?eclipse version="3.0"?>
+
+<plugin  name="Bioportal import plugin for Desktop Protege" version="0.1.0">
+   <extension id="BioportalViewComponent"
+              point="org.protege.editor.core.application.ViewComponent">
+      <label value="Bioportal Search and Extract"/>
+      <class value="de.leipzig.imise.bioportal.BioportalViewComponent"/>
+      <category value="@org.protege.ontologycategory"/>
+   </extension>
+   
+   <extension id="BioportalImportClassHierarchyViewComponent"
+              point="org.protege.editor.core.application.ViewComponent">
+      <label value="Class Hierarchy and Bioportal Import"/>
+      <class value="de.leipzig.imise.bioportal.Plugin"/>
+      <category value="@org.protege.classcategory"/>
+   </extension>
+   
+   <extension id="bioportal.prefs"
+               point="org.protege.editor.core.application.preferencespanel">
+        	<label value="Bioportal"/>
+        <class value="de.leipzig.imise.bioportal.BioportalPreferencesPanel"/>
+    </extension>
+</plugin>
