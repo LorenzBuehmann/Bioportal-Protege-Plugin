@@ -1,34 +1,25 @@
-package de.leipzig.imise.bioportal;
-
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLEncoder;
-import java.util.Collections;
-import java.util.List;
+package de.leipzig.imise.bioportal.rest;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.ncbo.stanford.bean.search.Page;
-import org.ncbo.stanford.bean.search.SearchBean;
-import org.ncbo.stanford.bean.search.SearchResultListBean;
-
-import de.leipzig.imise.bioportal.bean.category.CategoryBean;
 import de.leipzig.imise.bioportal.bean.concept.ClassBean;
-import de.leipzig.imise.bioportal.bean.group.GroupBean;
-import de.leipzig.imise.bioportal.bean.ontologies.OntologyBean;
-import de.leipzig.imise.bioportal.util.BioportalCategories;
 import de.leipzig.imise.bioportal.util.BioportalConcept;
-import de.leipzig.imise.bioportal.util.BioportalGroups;
-import de.leipzig.imise.bioportal.util.BioportalOntologies;
 import de.leipzig.imise.bioportal.util.BioportalOntology;
-import de.leipzig.imise.bioportal.util.BioportalSearch;
 import de.leipzig.imise.bioportal.util.PrivateOntologyException;
 
-public class BioportalRESTServices {
-	public static final String DEFAULT_BASE_URL = "http://data.bioontology.org/";
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLEncoder;
+import java.util.*;
+
+public class BioportalRESTService {
+	public static final String DEFAULT_BASE_URL = "http://data.bioontology.org";
 	public static final String STAGE_BASE_URL 	= "http://stagerest.bioontology.org/bioportal/";
 	public static final String SUFFIX_ONTOLOGIES = "ontologies/";
 	public static final String SUFFIX_ONTOLOGY_VIRTUAL = "virtual/ontology/";
@@ -50,8 +41,53 @@ public class BioportalRESTServices {
 
 	public final static String API_KEY_PARAM = "apikey";	
 	public static final String BP_PRODUCTION_PROTEGE_API_KEY = API_KEY_PARAM + "=8fadfa2c-47de-4487-a1f5-b7af7378d693";
+	public static final String API_KEY = "8fadfa2c-47de-4487-a1f5-b7af7378d693";
 
 	static final ObjectMapper mapper = new ObjectMapper();
+
+	private static final Map<String, String> serviceLinks = new HashMap<>();
+
+
+	static {
+		init();
+	}
+
+	public static void init() {
+		// Get the available resources
+		String resourcesString = get(DEFAULT_BASE_URL + "/");
+		JsonNode resources = jsonToNode(resourcesString);
+
+		// Follow the link by looking for available services in the list of links
+		JsonNode links = resources.get("links");
+		for(Iterator<Map.Entry<String, JsonNode>> it = links.fields(); it.hasNext();) {
+			Map.Entry<String, JsonNode> entry = it.next();
+			serviceLinks.put(entry.getKey(), entry.getValue().asText());
+		}
+	}
+
+	private static String get(String urlToGet) {
+		URL url;
+		HttpURLConnection conn;
+		BufferedReader rd;
+		String line;
+		String result = "";
+		try {
+			url = new URL(urlToGet);
+			conn = (HttpURLConnection) url.openConnection();
+			conn.setRequestMethod("GET");
+			conn.setRequestProperty("Authorization", "apikey token=" + API_KEY);
+			conn.setRequestProperty("Accept", "application/json");
+			rd = new BufferedReader(
+					new InputStreamReader(conn.getInputStream()));
+			while ((line = rd.readLine()) != null) {
+				result += line;
+			}
+			rd.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return result;
+	}
 	
 	private static URL getBioportalCategoriesURL(){
 		URL url = null;
@@ -140,15 +176,8 @@ public class BioportalRESTServices {
 	}
 	
 	private static String getSearchTermString(String searchTerm, List<Integer> ontologyIds, boolean isExactMatch, boolean includeProperties){
-		StringBuffer sb = new StringBuffer();
-		sb.append(DEFAULT_BASE_URL);
-		sb.append(SUFFIX_SEARCH);
-		try {
-			sb.append(encodeURI(searchTerm));
-		} catch (UnsupportedEncodingException e1) {
-			e1.printStackTrace();
-		}
-		sb.append("?");
+		StringBuffer sb = new StringBuffer("?");
+		sb.append("q=").append(searchTerm).append("&");
 		if(!ontologyIds.isEmpty()){
 			sb.append(SEARCH_PROPERTY_ONTOLOGY_IDS);
 			for(Integer ontologyId : ontologyIds){
@@ -162,8 +191,6 @@ public class BioportalRESTServices {
 		sb.append("&");
 		sb.append(SEARCH_PROPERTY_INCLUDE_PROPERTIES);
 		sb.append(includeProperties ? "=1" : "=0");
-		sb.append("&");
-		sb.append(DEFAULT_EMAIL);
 		return sb.toString();
 	}
 	
@@ -216,20 +243,94 @@ public class BioportalRESTServices {
 		}
 		return root;
 	}
-	
-	public static List<CategoryBean> getCategories(){
-		BioportalCategories c = new BioportalCategories();
-		return c.getCategories(getBioportalCategoriesURL());
+
+	/**
+	 * @return all categories
+	 */
+	public static List<Category> getCategories(){
+		String link = serviceLinks.get("categories");
+
+		// Get the categories from the link we found
+		JsonNode rootNode = jsonToNode(get(link));
+
+		List<Category> result = new ArrayList<>();
+		for (JsonNode node : rootNode) {
+			try {
+				result.add(mapper.readValue(node.toString(), Category.class));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+
+		return result;
+	}
+
+	/**
+	 * @return all groups
+	 */
+	public static List<Group> getGroups(){
+		String link = serviceLinks.get("groups");
+
+		// Get the groups from the link we found
+		JsonNode rootNode = jsonToNode(get(link));
+
+		List<Group> result = new ArrayList<>();
+		for (JsonNode node : rootNode) {
+			try {
+				result.add(mapper.readValue(node.toString(), Group.class));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+
+		return result;
 	}
 	
-	public static List<GroupBean> getGroups(){
-		BioportalGroups c = new BioportalGroups();
-		return c.getGroups(getBioportalGroupsURL());
+	public static List<Ontology> getOntologies(){
+		String link = serviceLinks.get("ontologies");
+
+		// Get the groups from the link we found
+		JsonNode rootNode = jsonToNode(get(link));
+
+		List<Ontology> result = new ArrayList<>();
+		for (JsonNode node : rootNode) {
+			try {
+				result.add(mapper.readValue(node.toString(), Ontology.class));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+
+		return result;
 	}
-	
-	public static List<OntologyBean> getOntologies(){
-		BioportalOntologies c = new BioportalOntologies();
-		return c.getOntologies(getOntologiesURL());
+
+	public static JsonNode getOntologyMetrics(String ontologyAcronym){
+		String link = serviceLinks.get("ontologies") + "/" + ontologyAcronym + "/metrics";
+
+		// Get the metrics from the link we found
+		JsonNode metrics = jsonToNode(get(link));
+
+		for (Iterator<Map.Entry<String, JsonNode>> entries = metrics.fields(); entries.hasNext();) {
+			Map.Entry<String, JsonNode> entry = entries.next();
+			System.out.println(entry.getKey() + ":" + entry.getValue().asText());
+		}
+
+		return metrics;
+	}
+
+	public static Page getSearchResult(String searchTerm, List<Integer> ontologyIds, boolean isExactMatch, boolean includeProperties) {
+		String link = serviceLinks.get("search");
+
+		// Get the groups from the link we found
+		JsonNode rootNode = jsonToNode(get(link + getSearchTermString(searchTerm, ontologyIds, isExactMatch, includeProperties)));
+		Page rootPage = null;
+		try {
+			rootPage = mapper.readValue(rootNode.toString(), Page.class);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		return rootPage;
 	}
 	
 	public static de.leipzig.imise.bioportal.bean.ontology.OntologyBean getOntologyProperties(int ontologyId){
@@ -247,60 +348,7 @@ public class BioportalRESTServices {
 		return c.getConceptProperties(getConceptPropertiesVirtualURL(ontologyVirtualId, conceptId));
 	}
 	
-	public static List<SearchBean> getSearchResults(String searchTerm, List<Integer> ontologyIds, boolean isExactMatch, boolean includeProperties){
-		try {
-			BioportalSearch c = new BioportalSearch();
-			Page page = c.getSearchResults(getSearchURL(searchTerm, ontologyIds, isExactMatch, includeProperties));
-			if(page == null){
-				return Collections.emptyList();
-			}
-			SearchResultListBean data = page.getContents();
-			if(data == null){
-				return Collections.emptyList();
-			}
-			return data.getSearchResultList();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return null;
-	}
-	
-	public static List<SearchBean> getSearchClassesResults(String searchTerm, List<Integer> ontologyIds, boolean isExactMatch, boolean includeProperties){
-		try {
-			BioportalSearch c = new BioportalSearch();
-			Page page = c.getSearchResults(getSearchClassesURL(searchTerm, ontologyIds, isExactMatch, includeProperties));
-			if(page == null){
-				return Collections.emptyList();
-			}
-			SearchResultListBean data = page.getContents();
-			if(data == null){
-				return Collections.emptyList();
-			}
-			return data.getSearchResultList();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return null;
-	}
-	
-	public static List<SearchBean> getSearchPropertiesResults(String searchTerm, List<Integer> ontologyIds, boolean isExactMatch, boolean includeProperties){
-		try {
-			BioportalSearch c = new BioportalSearch();
-			Page page = c.getSearchResults(getSearchPropertiesURL(searchTerm, ontologyIds, isExactMatch, includeProperties));
-			if(page == null){
-				return Collections.emptyList();
-			}
-			SearchResultListBean data = page.getContents();
-			if(data == null){
-				return Collections.emptyList();
-			}
-			return data.getSearchResultList();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return null;
-	}
-	
+
 	private static String encodeURI(String text) throws UnsupportedEncodingException {
 		return URLEncoder.encode(text, "UTF-8").toString().replaceAll("\\+", "%20");
 	}
@@ -314,15 +362,19 @@ public class BioportalRESTServices {
 	            url = url + "?";
 	        } else {
 	            url = url + "&";
-	        }System.out.println(url + getDefaultRestSuffix());
+	        }
 	        return url + getDefaultRestSuffix();
 	}
 	
 	public static void main(String[] args) throws Exception{
-		BioportalRESTServices.getOntologies();
-//		BioportalRESTServices.getGroups();
-//		BioportalRESTServices.getCategories();
-////		BioportalRESTServices.getSearchResults("heart", Collections.<Integer>emptyList(), false, false);
+		List<Ontology> ontologies = BioportalRESTService.getOntologies();
+		List<Group> groups = BioportalRESTService.getGroups();
+		List<Category> categories = BioportalRESTService.getCategories();
+		Page page = BioportalRESTService.getSearchResult("heart", Collections.<Integer>emptyList(), false, false);
+		List<Entity> entities = page.getEntity();
+		for (Entity entity : entities) {
+			System.out.println(entity.getId());
+		}
 //		System.out.println(BioportalRESTServices.getConceptPropertiesVirtual(1516, "O80-O84.9").getRelations().get(ClassBean.SUB_CLASS_PROPERTY));
 	}
 

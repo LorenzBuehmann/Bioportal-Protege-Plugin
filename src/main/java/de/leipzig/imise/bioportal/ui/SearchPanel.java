@@ -8,6 +8,10 @@ import de.leipzig.imise.bioportal.bean.category.CategoryBean;
 import de.leipzig.imise.bioportal.bean.concept.ClassBean;
 import de.leipzig.imise.bioportal.bean.group.GroupBean;
 import de.leipzig.imise.bioportal.bean.ontologies.OntologyBean;
+import de.leipzig.imise.bioportal.rest.BioportalRESTService;
+import de.leipzig.imise.bioportal.rest.Category;
+import de.leipzig.imise.bioportal.rest.Group;
+import de.leipzig.imise.bioportal.rest.Ontology;
 import de.leipzig.imise.bioportal.util.PrivateOntologyException;
 import org.apache.log4j.Logger;
 import org.ncbo.stanford.bean.search.SearchBean;
@@ -42,17 +46,15 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 public class SearchPanel extends JPanel {
 
 	private static transient Logger log = Logger.getLogger(SearchPanel.class);
 
-	public static String DETAILS_ICON_URL = BioportalViewComponent.class.getResource("details.png").toString();
+	public static String DETAILS_ICON_URL;
 	
 	private static int INDENT = 4;
 
@@ -64,7 +66,8 @@ public class SearchPanel extends JPanel {
 	private SearchResultTable searchResultTable;
 	private JComboBox categoriesBox;
 	private JComboBox groupsBox;
-	private OntologiesTable ontologiesTable;CheckTable<OntologyBean> ontologiesTable1;
+	private OntologiesTable ontologiesTable;
+	CheckTable<Ontology> ontologiesTable1;
 	private JTree classTree;
 
 	private OWLEditorKit editorKit;
@@ -73,15 +76,19 @@ public class SearchPanel extends JPanel {
 		this.editorKit = editorKit;
 		createUI();
 		initFilterData();
+
+		DETAILS_ICON_URL = this.getClass().getClassLoader().getResource("details.png").toString();
 	}
 	
 	private void initFilterData(){
 		OntologiesRetrievingTask task1 = new OntologiesRetrievingTask();
 		ProtegeApplication.getBackgroundTaskManager().startTask(task1);
 		task1.execute();
+
 		CategoriesRetrievingTask task2 = new CategoriesRetrievingTask();
 		ProtegeApplication.getBackgroundTaskManager().startTask(task2);
 		task2.execute();
+
 		GroupsRetrievingTask task3 = new GroupsRetrievingTask();
 		ProtegeApplication.getBackgroundTaskManager().startTask(task3);
 		task3.execute();
@@ -195,13 +202,13 @@ public class SearchPanel extends JPanel {
 		holderPanel.add(groupsBox, gbc);
 		
 		
-		ontologiesTable1 = new CheckTable<OntologyBean>("Ontologies");
+		ontologiesTable1 = new CheckTable<>("Ontologies");
 		ontologiesTable1.setDefaultRenderer(new DefaultTableCellRenderer(){
 			public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
 				Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 				if(column == 1){
 					JLabel l = (JLabel) c;
-					l.setText(((OntologyBean)value).getDisplayLabel());
+					l.setText(((Ontology)value).getName());
 				}
 				return c;
 			};
@@ -493,14 +500,19 @@ public class SearchPanel extends JPanel {
 	private void updateOntologiesList(){
 		CategoryBean categoryBean = (CategoryBean)categoriesBox.getSelectedItem();
 		GroupBean groupBean = (GroupBean)groupsBox.getSelectedItem();
-		List<OntologyBean> ontologies = new ArrayList<OntologyBean>();
-		for(OntologyBean bean : BioportalManager.getInstance().getOntologies()){
-			if( (categoryBean.getId() == 0000 || bean.getCategoryIds().contains(categoryBean.getId())) 
-					&& (groupBean.getId() == 0000 || bean.getGroupIds().contains(groupBean.getId()))){
-				ontologies.add(bean);
-			}
+		List<Ontology> ontologies = new ArrayList<>();
+		for(Ontology bean : BioportalManager.getInstance().getOntologies()){
+//			if( (categoryBean.getId() == 0000 || bean.getCategoryIds().contains(categoryBean.getId()))
+//					&& (groupBean.getId() == 0000 || bean.getGroupIds().contains(groupBean.getId()))){
+//				ontologies.add(bean);
+//			}
 		}
-		Collections.sort(ontologies);
+		Collections.sort(ontologies, new Comparator<Ontology>() {
+			@Override
+			public int compare(Ontology o1, Ontology o2) {
+				return o1.getName().compareTo(o2.getName());
+			}
+		});
 		ontologiesTable.setOntologies(ontologies);
 	}
 	
@@ -551,21 +563,26 @@ public class SearchPanel extends JPanel {
 
 	}
 	
-	class OntologiesRetrievingTask extends SwingWorker<List<OntologyBean>, Void> implements BackgroundTask {
+	class OntologiesRetrievingTask extends SwingWorker<List<Ontology>, Void> implements BackgroundTask {
 
 		@Override
-		protected List<OntologyBean> doInBackground() throws Exception {
-			return new ArrayList<OntologyBean>(BioportalManager.getInstance().getOntologies());
+		protected List<Ontology> doInBackground() throws Exception {
+			return new ArrayList<Ontology>(BioportalManager.getInstance().getOntologies());
 		}
 		
 		@Override
 		protected void done() {
 			ProtegeApplication.getBackgroundTaskManager().endTask(this);
-			List<OntologyBean> result;
+			List<Ontology> result;
 			try {
 				result = get();
-				Collections.sort(result);
-				CheckTableModel<OntologyBean> model = ontologiesTable1.getModel();
+				Collections.sort(result, new Comparator<Ontology>() {
+					@Override
+					public int compare(Ontology o1, Ontology o2) {
+						return o1.getName().compareTo(o2.getName());
+					}
+				});
+				CheckTableModel<Ontology> model = ontologiesTable1.getModel();
 				model.setData(result, false);
 				ontologiesTable.setOntologies(result);
 				editorKit.getWorkspace().setCursor(Cursor.getDefaultCursor());
@@ -578,21 +595,28 @@ public class SearchPanel extends JPanel {
 
 	}
 	
-	class CategoriesRetrievingTask extends SwingWorker<List<CategoryBean>, Void> implements BackgroundTask {
+	class CategoriesRetrievingTask extends SwingWorker<List<Category>, Void> implements BackgroundTask {
 
 		@Override
-		protected List<CategoryBean> doInBackground() throws Exception {
-			return BioportalRESTServices.getCategories();
+		protected List<Category> doInBackground() throws Exception {
+			return BioportalRESTService.getCategories();
 		}
 		
 		@Override
 		protected void done() {
 			ProtegeApplication.getBackgroundTaskManager().endTask(this);
-			List<CategoryBean> result;
+			List<Category> result;
 			try {
 				result = get();
-				Collections.sort(result);
-				result.add(0, new CategoryBean("ALL CATEGORIES"));
+				Collections.sort(result, new Comparator<Category>() {
+					@Override
+					public int compare(Category o1, Category o2) {
+						return o1.getName().compareTo(o2.getName());
+					}
+				});
+				Category allCategory = new Category();
+				allCategory.setName("ALL CATEGORIES");
+				result.add(0, allCategory);
 				categoriesBox.setModel(new DefaultComboBoxModel(result.toArray()));
 				editorKit.getWorkspace().setCursor(Cursor.getDefaultCursor());
 			} catch (InterruptedException e) {
@@ -604,21 +628,28 @@ public class SearchPanel extends JPanel {
 
 	}
 	
-	class GroupsRetrievingTask extends SwingWorker<List<GroupBean>, Void> implements BackgroundTask {
+	class GroupsRetrievingTask extends SwingWorker<List<Group>, Void> implements BackgroundTask {
 
 		@Override
-		protected List<GroupBean> doInBackground() throws Exception {
-			return BioportalRESTServices.getGroups();
+		protected List<Group> doInBackground() throws Exception {
+			return BioportalRESTService.getGroups();
 		}
 		
 		@Override
 		protected void done() {
 			ProtegeApplication.getBackgroundTaskManager().endTask(this);
-			List<GroupBean> result;
+			List<Group> result;
 			try {
 				result = get();
-				Collections.sort(result);
-				result.add(0, new GroupBean("ALL GROUPS"));
+				Collections.sort(result, new Comparator<Group>() {
+					@Override
+					public int compare(Group o1, Group o2) {
+						return o1.getName().compareTo(o2.getName());
+					}
+				});
+				Group allGroup = new Group();
+				allGroup.setName("ALL GROUPS");
+				result.add(0, allGroup);
 				groupsBox.setModel(new DefaultComboBoxModel(result.toArray()));
 				editorKit.getWorkspace().setCursor(Cursor.getDefaultCursor());
 			} catch (InterruptedException e) {

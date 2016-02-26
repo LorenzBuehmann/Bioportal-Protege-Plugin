@@ -7,11 +7,12 @@ import javax.swing.table.AbstractTableModel;
 
 import de.leipzig.imise.bioportal.BioportalManager;
 import de.leipzig.imise.bioportal.bean.ontologies.OntologyBean;
+import de.leipzig.imise.bioportal.rest.Ontology;
 
 public class OntologiesTableModel extends AbstractTableModel {
 	
 	private static final long serialVersionUID = 6494904083408386403L;
-	private List<OntologyBean> ontologies = new ArrayList<OntologyBean>();
+	private List<Ontology> ontologies = new ArrayList<>();
 
 	@Override
 	public int getColumnCount() {
@@ -62,7 +63,7 @@ public class OntologiesTableModel extends AbstractTableModel {
 		return null;
 	}
 	
-	public void setOntologies(List<OntologyBean> ontologies){
+	public void setOntologies(List<Ontology> ontologies){
 		this.ontologies.clear();
 		this.ontologies.addAll(ontologies);
 		fireTableDataChanged();

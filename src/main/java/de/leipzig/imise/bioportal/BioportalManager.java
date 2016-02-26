@@ -1,29 +1,24 @@
 package de.leipzig.imise.bioportal;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import org.ncbo.stanford.bean.search.SearchBean;
-
 import de.leipzig.imise.bioportal.bean.ontologies.OntologyBean;
 import de.leipzig.imise.bioportal.cache.SearchCache;
+import de.leipzig.imise.bioportal.rest.BioportalRESTService;
+import de.leipzig.imise.bioportal.rest.Ontology;
+import org.ncbo.stanford.bean.search.SearchBean;
+
+import java.util.*;
 
 public class BioportalManager {
 	
 	public static BioportalManager instance = null;
 	
-	private Set<OntologyBean> selectedOntologies;
-	private Map<OntologyBean, Boolean> ontologies;
+	private Set<Ontology> selectedOntologies = new HashSet<>();
+	private Map<Ontology, Boolean> ontologies = new HashMap<>();
 	private SearchCache searchCache;
 
 	private BioportalManager(){
-		selectedOntologies = new HashSet<OntologyBean>();
-		ontologies = new HashMap<OntologyBean, Boolean>();
+
+
 		searchCache = new SearchCache();
 	}
 	
@@ -34,7 +29,7 @@ public class BioportalManager {
 		return instance;
 	}
 	
-	public void setOntologySelected(OntologyBean ontology, boolean b) {
+	public void setOntologySelected(Ontology ontology, boolean b) {
         if(b) {
             if(!selectedOntologies.contains(ontology)) {
             	selectedOntologies.add(ontology);
@@ -53,41 +48,41 @@ public class BioportalManager {
 		return selectedOntologies.contains(ontologyBean);
 	}
 	
-	public Set<OntologyBean> getOntologies(){
-		Set<OntologyBean> o = ontologies.keySet();
+	public Set<Ontology> getOntologies(){
+		Set<Ontology> o = ontologies.keySet();
 		if(o.isEmpty()){
-			for(OntologyBean bean : BioportalRESTServices.getOntologies()){
-				ontologies.put(bean, Boolean.valueOf(false));
+			for(Ontology ontology : BioportalRESTService.getOntologies()){
+				ontologies.put(ontology, Boolean.valueOf(false));
 			}
 		}
 		return Collections.unmodifiableSet(ontologies.keySet());
 	}
 	
-	public Set<OntologyBean> getSelectedOntologies() {
+	public Set<Ontology> getSelectedOntologies() {
         return Collections.unmodifiableSet(selectedOntologies);
     }
 	
 	public List<SearchBean> getSearchResults(String searchTerm, List<Integer> ontologyIds, boolean isExactMatch, boolean includeProperties){
-		List<Integer> ontIds = new ArrayList<Integer>();
-		for(OntologyBean bean : selectedOntologies){
-			ontIds.add(bean.getOntologyId());
-		}System.out.println(ontIds);
+		List<String> ontIds = new ArrayList<>();
+		for(Ontology bean : selectedOntologies){
+			ontIds.add(bean.getId());
+		}
 		return searchCache.getSearchResults(searchTerm, ontIds, isExactMatch, includeProperties);
 //		return searchCache.getSearchResults(searchTerm, ontologyIds, isExactMatch, includeProperties);
 	}
 	
 	public List<SearchBean> getSearchClassesResults(String searchTerm, List<Integer> ontologyIds, boolean isExactMatch, boolean includeProperties){
-		List<Integer> ontIds = new ArrayList<Integer>();
-		for(OntologyBean bean : selectedOntologies){
-			ontIds.add(bean.getOntologyId());
+		List<String> ontIds = new ArrayList<>();
+		for(Ontology bean : selectedOntologies){
+			ontIds.add(bean.getId());
 		}
 		return searchCache.getSearchClassesResults(searchTerm, ontIds, isExactMatch, includeProperties);
 	}
 	
 	public List<SearchBean> getSearchPropertiesResults(String searchTerm, List<Integer> ontologyIds, boolean isExactMatch, boolean includeProperties){
-		List<Integer> ontIds = new ArrayList<Integer>();
-		for(OntologyBean bean : selectedOntologies){
-			ontIds.add(bean.getOntologyId());
+		List<String> ontIds = new ArrayList<>();
+		for(Ontology bean : selectedOntologies){
+			ontIds.add(bean.getId());
 		}
 		return searchCache.getSearchPropertiesResults(searchTerm, ontIds, isExactMatch, includeProperties);
 	}

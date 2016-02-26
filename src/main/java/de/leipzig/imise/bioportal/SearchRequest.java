@@ -5,11 +5,11 @@ import java.util.List;
 public class SearchRequest {
 	
 	private String searchTerm;
-	private List<Integer> ontologyIds;
+	private List<String> ontologyIds;
 	private boolean isExactMatch;
 	private boolean includeProperties;
 	
-	public SearchRequest(String searchTerm, List<Integer> ontologyIds, boolean isExactMatch, boolean includeProperties){
+	public SearchRequest(String searchTerm, List<String> ontologyIds, boolean isExactMatch, boolean includeProperties){
 		this.searchTerm = searchTerm;
 		this.ontologyIds = ontologyIds;
 		this.isExactMatch = isExactMatch;
@@ -20,7 +20,7 @@ public class SearchRequest {
 		return searchTerm;
 	}
 
-	public List<Integer> getOntologyIds() {
+	public List<String> getOntologyIds() {
 		return ontologyIds;
 	}
 

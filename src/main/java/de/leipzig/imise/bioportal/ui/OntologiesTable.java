@@ -22,6 +22,7 @@ import javax.swing.border.TitledBorder;
 import javax.swing.event.CellEditorListener;
 import javax.swing.table.TableCellEditor;
 
+import de.leipzig.imise.bioportal.rest.Ontology;
 import org.jdesktop.swingx.JXTable;
 import org.jdesktop.swingx.decorator.ColorHighlighter;
 import org.jdesktop.swingx.decorator.ComponentAdapter;
@@ -108,7 +109,7 @@ public class OntologiesTable extends JXTable {
 		
 	}
 	
-	public void setOntologies(List<OntologyBean> ontologies){
+	public void setOntologies(List<Ontology> ontologies){
 		((OntologiesTableModel)getModel()).setOntologies(ontologies);
 	}
 	
@@ -144,8 +145,7 @@ public class OntologiesTable extends JXTable {
 		
 		test.add(scroll);
 		
-		List<OntologyBean> result = new ArrayList<OntologyBean>(BioportalManager.getInstance().getOntologies());
-		Collections.sort(result);
+		List<Ontology> result = new ArrayList<>(BioportalManager.getInstance().getOntologies());
 		t.setOntologies(result);
 		
 		test.setVisible(true);

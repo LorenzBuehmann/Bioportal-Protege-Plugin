@@ -15,7 +15,7 @@ public class SearchCache {
 	
 	private Map<SearchRequest, List<SearchBean>> searchCache = new HashMap<SearchRequest, List<SearchBean>>();
 	
-	public List<SearchBean> getSearchResults(String searchTerm, List<Integer> ontologyIds, boolean isExactMatch, boolean includeProperties){
+	public List<SearchBean> getSearchResults(String searchTerm, List<String> ontologyIds, boolean isExactMatch, boolean includeProperties){
 		SearchRequest request = new SearchRequest(searchTerm, ontologyIds, isExactMatch, includeProperties);
 		List<SearchBean> result = searchCache.get(request);
 		if(result == null){
@@ -35,13 +35,13 @@ public class SearchCache {
 			}
 			
 			
-			result = BioportalRESTServices.getSearchResults(searchTerm, ontologyIds, isExactMatch, includeProperties);
+//			result = BioportalRESTServices.getSearchResults(searchTerm, ontologyIds, isExactMatch, includeProperties);
 			searchCache.put(request, result);
 		}
 		return result;
 	}
 	
-	public List<SearchBean> getSearchClassesResults(String searchTerm, List<Integer> ontologyIds, boolean isExactMatch, boolean includeProperties){
+	public List<SearchBean> getSearchClassesResults(String searchTerm, List<String> ontologyIds, boolean isExactMatch, boolean includeProperties){
 		SearchRequest request = new SearchRequest(searchTerm, ontologyIds, isExactMatch, includeProperties);
 		List<SearchBean> result = searchCache.get(request);
 		if(result == null){
@@ -61,13 +61,13 @@ public class SearchCache {
 			}
 			
 			
-			result = BioportalRESTServices.getSearchClassesResults(searchTerm, ontologyIds, isExactMatch, includeProperties);
+//			result = BioportalRESTServices.getSearchClassesResults(searchTerm, ontologyIds, isExactMatch, includeProperties);
 			searchCache.put(request, result);
 		}
 		return result;
 	}
 	
-	public List<SearchBean> getSearchPropertiesResults(String searchTerm, List<Integer> ontologyIds, boolean isExactMatch, boolean includeProperties){
+	public List<SearchBean> getSearchPropertiesResults(String searchTerm, List<String> ontologyIds, boolean isExactMatch, boolean includeProperties){
 		SearchRequest request = new SearchRequest(searchTerm, ontologyIds, isExactMatch, includeProperties);
 		List<SearchBean> result = searchCache.get(request);
 		if(result == null){
@@ -85,7 +85,7 @@ public class SearchCache {
 				}
 			}
 			
-			result = BioportalRESTServices.getSearchPropertiesResults(searchTerm, ontologyIds, isExactMatch, includeProperties);
+//			result = BioportalRESTServices.getSearchPropertiesResults(searchTerm, ontologyIds, isExactMatch, includeProperties);
 			searchCache.put(request, result);
 		}
 		return result;

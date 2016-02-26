@@ -17,9 +17,13 @@ public class SearchResultTableModel extends AbstractTableModel {
 	 * 
 	 */
 	private static final long serialVersionUID = -1006389200163898235L;
-	private static final Icon showDetailsIcon = new ImageIcon(BioportalViewComponent.class.getResource("details.png"));
-	private static final Icon extractIcon = new ImageIcon(BioportalViewComponent.class.getResource("extract.png"));
+	private static final Icon showDetailsIcon = new ImageIcon(BioportalViewComponent.class.getClassLoader().getResource("details.png"));
+	private static final Icon extractIcon = new ImageIcon(BioportalViewComponent.class.getClassLoader().getResource("extract.png"));
 	private List<SearchBean> searchResults = new ArrayList<SearchBean>();
+
+	public SearchResultTableModel() {
+
+	}
 
 	@Override
 	public int getColumnCount() {
