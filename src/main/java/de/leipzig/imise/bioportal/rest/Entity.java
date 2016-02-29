@@ -199,7 +199,7 @@ public class Entity {
 	/**
 	 * @return The entityLinks
 	 */
-	@JsonProperty("entityLinks")
+	@JsonProperty("links")
 	public EntityLinks getEntityLinks() {
 		return entityLinks;
 	}
@@ -207,7 +207,7 @@ public class Entity {
 	/**
 	 * @param entityLinks The entityLinks
 	 */
-	@JsonProperty("entityLinks")
+	@JsonProperty("links")
 	public void setEntityLinks(EntityLinks entityLinks) {
 		this.entityLinks = entityLinks;
 	}
@@ -222,4 +222,8 @@ public class Entity {
 		this.additionalProperties.put(name, value);
 	}
 
+	@Override
+	public String toString() {
+		return getId();
+	}
 }

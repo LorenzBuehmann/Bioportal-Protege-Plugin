@@ -19,7 +19,7 @@ public class SearchCache {
 		SearchRequest request = new SearchRequest(searchTerm, ontologyIds, isExactMatch, includeProperties);
 		List<SearchBean> result = searchCache.get(request);
 		if(result == null){
-			
+
 			for(SearchRequest r : searchCache.keySet()){
 				if(r.getSearchTerm().equals(searchTerm)){
 					if(r.getOntologyIds().contains(request.getOntologyIds())){

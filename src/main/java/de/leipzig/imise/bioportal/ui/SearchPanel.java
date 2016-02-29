@@ -3,15 +3,10 @@ package de.leipzig.imise.bioportal.ui;
 import de.leipzig.imise.bioportal.BioportalConstants;
 import de.leipzig.imise.bioportal.BioportalManager;
 import de.leipzig.imise.bioportal.BioportalRESTServices;
-import de.leipzig.imise.bioportal.BioportalViewComponent;
 import de.leipzig.imise.bioportal.bean.category.CategoryBean;
 import de.leipzig.imise.bioportal.bean.concept.ClassBean;
 import de.leipzig.imise.bioportal.bean.group.GroupBean;
-import de.leipzig.imise.bioportal.bean.ontologies.OntologyBean;
-import de.leipzig.imise.bioportal.rest.BioportalRESTService;
-import de.leipzig.imise.bioportal.rest.Category;
-import de.leipzig.imise.bioportal.rest.Group;
-import de.leipzig.imise.bioportal.rest.Ontology;
+import de.leipzig.imise.bioportal.rest.*;
 import de.leipzig.imise.bioportal.util.PrivateOntologyException;
 import org.apache.log4j.Logger;
 import org.ncbo.stanford.bean.search.SearchBean;
@@ -260,11 +255,17 @@ public class SearchPanel extends JPanel {
 //						} catch (UnsupportedEncodingException e2) {
 //							e2.printStackTrace();
 //						}
-							createLazyClassHierarchyTree(searchResultTable.getSearchBean(row));
+//							createLazyClassHierarchyTree(searchResultTable.getSearchBean(row));
 						break;
-						case 2:showOntologyDetailsDialog(searchResultTable.getSearchBean(row));break;//NativeBrowserLauncher.openURL(getShowOntologyInBPString(searchResultTable.getSearchBean(row)));break;
-						case 4:showConceptDetailsDialog(searchResultTable.getSearchBean(row));break;
-						case 5:showModuleAxiomsDialog(searchResultTable.getSearchBean(row));break;
+						case 2:
+//							showOntologyDetailsDialog(searchResultTable.getSearchBean(row));
+							break;//NativeBrowserLauncher.openURL(getShowOntologyInBPString(searchResultTable.getSearchBean(row)));break;
+						case 4:
+							showConceptDetailsDialog(searchResultTable.getSearchBean(row));
+							break;
+						case 5:
+//							showModuleAxiomsDialog(searchResultTable.getSearchBean(row));
+							break;
 					}
 					
 					setCursor(null);
@@ -282,10 +283,10 @@ public class SearchPanel extends JPanel {
 	}
 
 	private void search() {
-		SearchTask searchTask = new SearchTask(searchField.getText(), Collections.<Integer>emptyList(),
+		SearchTask searchTask = new SearchTask(searchField.getText(), Collections.<String>emptyList(),
 				exactMatchRadioButton.isSelected(), searchInAttributesBox.isSelected());
 		ProtegeApplication.getBackgroundTaskManager().startTask(searchTask);
-		editorKit.getWorkspace().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+//		editorKit.getWorkspace().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 		searchButton.setEnabled(false);
 		searchTask.execute();
 	}
@@ -295,7 +296,7 @@ public class SearchPanel extends JPanel {
 		searchButton.setEnabled(!searchField.getText().isEmpty());
 	}
 
-	private void showConceptDetailsDialog(SearchBean searchBean) {
+	private void showConceptDetailsDialog(Entity searchBean) {
 		new ConceptDetailsDialog(searchBean);
 	}
 	
@@ -516,15 +517,15 @@ public class SearchPanel extends JPanel {
 		ontologiesTable.setOntologies(ontologies);
 	}
 	
-	class SearchTask extends SwingWorker<List<SearchBean>, Void> implements BackgroundTask{
+	class SearchTask extends SwingWorker<Page, Void> implements BackgroundTask{
 
 		
 		private String searchTerm;
-		private List<Integer> ontologyIds;
+		private List<String> ontologyIds;
 		private boolean isExactMatch;
 		private boolean includeProperties;
 		
-		public SearchTask(String searchTerm, List<Integer> ontologyIds, boolean isExactMatch, boolean includeProperties){
+		public SearchTask(String searchTerm, List<String> ontologyIds, boolean isExactMatch, boolean includeProperties){
 			this.searchTerm = searchTerm;
 			this.ontologyIds = ontologyIds;
 			this.isExactMatch = isExactMatch;
@@ -532,7 +533,7 @@ public class SearchPanel extends JPanel {
 		}
 
 		@Override
-		protected List<SearchBean> doInBackground() throws Exception {
+		protected Page doInBackground() throws Exception {
 			return BioportalManager.getInstance().getSearchClassesResults(searchTerm, ontologyIds, isExactMatch, includeProperties);
 		}
 		
@@ -540,11 +541,11 @@ public class SearchPanel extends JPanel {
 		protected void done() {
 			ProtegeApplication.getBackgroundTaskManager().endTask(this);
 			searchButton.setEnabled(true);
-			List<SearchBean> result;
+			Page result;
 			try {
 				result = get();
-				searchResultTable.setSearchResults(result);
-				editorKit.getWorkspace().setCursor(Cursor.getDefaultCursor());
+				searchResultTable.setSearchResults(result.getEntities());
+//				editorKit.getWorkspace().setCursor(Cursor.getDefaultCursor());
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			} catch (ExecutionException e) {
@@ -585,7 +586,7 @@ public class SearchPanel extends JPanel {
 				CheckTableModel<Ontology> model = ontologiesTable1.getModel();
 				model.setData(result, false);
 				ontologiesTable.setOntologies(result);
-				editorKit.getWorkspace().setCursor(Cursor.getDefaultCursor());
+//				editorKit.getWorkspace().setCursor(Cursor.getDefaultCursor());
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			} catch (ExecutionException e) {
@@ -618,7 +619,7 @@ public class SearchPanel extends JPanel {
 				allCategory.setName("ALL CATEGORIES");
 				result.add(0, allCategory);
 				categoriesBox.setModel(new DefaultComboBoxModel(result.toArray()));
-				editorKit.getWorkspace().setCursor(Cursor.getDefaultCursor());
+//				editorKit.getWorkspace().setCursor(Cursor.getDefaultCursor());
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			} catch (ExecutionException e) {
@@ -651,7 +652,7 @@ public class SearchPanel extends JPanel {
 				allGroup.setName("ALL GROUPS");
 				result.add(0, allGroup);
 				groupsBox.setModel(new DefaultComboBoxModel(result.toArray()));
-				editorKit.getWorkspace().setCursor(Cursor.getDefaultCursor());
+//				editorKit.getWorkspace().setCursor(Cursor.getDefaultCursor());
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			} catch (ExecutionException e) {

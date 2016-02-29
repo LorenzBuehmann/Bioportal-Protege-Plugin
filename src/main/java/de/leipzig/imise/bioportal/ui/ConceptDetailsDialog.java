@@ -8,6 +8,8 @@ import javax.swing.JScrollPane;
 import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
 
+import de.leipzig.imise.bioportal.rest.BioportalRESTService;
+import de.leipzig.imise.bioportal.rest.Entity;
 import org.ncbo.stanford.bean.search.SearchBean;
 import org.ncbo.stanford.util.HTMLUtil;
 import org.protege.editor.core.ui.util.JOptionPaneEx;
@@ -19,7 +21,7 @@ import de.leipzig.imise.bioportal.util.PrivateOntologyException;
 
 public class ConceptDetailsDialog extends DetailsDialog {
 
-	public ConceptDetailsDialog(SearchBean searchBean){
+	public ConceptDetailsDialog(Entity entity){
 		super();
 		StringBuffer buffer = new StringBuffer();
 		buffer.append("<html><body>");
@@ -31,29 +33,28 @@ public class ConceptDetailsDialog extends DetailsDialog {
 		String oddColor = "#F4F2F3";
 		String evenColor = "#E6E6E5";
 
-		ClassBean cb = null;
-		try {
-			cb = BioportalRESTServices.getConceptProperties(searchBean.getOntologyVersionId(), searchBean.getConceptId());
-			if (cb == null) {
-				detailsPane.setText("<html><body><i>No search results.</i></body></html>");
-				return;
-			}
-		} catch (PrivateOntologyException e1) {
-			e1.printStackTrace();
-			JOptionPane.showMessageDialog(this,e1.getMessage(),"Access Error", JOptionPane.ERROR_MESSAGE);
-			return;
-		}
+		String label = entity.getPrefLabel();
+		Map<String, Object> relationsMap = entity.getAdditionalProperties();
 		
-		
-		String label = cb.getLabel();
-		Map<Object, Object> relationsMap = cb.getRelations();
-		
-		buffer.append(getDetailsProperty("ID", cb.getId(), evenColor));
+		buffer.append(getDetailsProperty("ID", entity.getId(), evenColor));
 		buffer.append(getDetailsProperty("Name", label, oddColor));
+
+		boolean odd = false;
+		for(String def : entity.getDefinition()) {
+			buffer.append(getDetailsProperty("Definitions", def, odd ? oddColor : evenColor));
+			odd = !odd;
+		}
+
 		if(relationsMap.get("ChildCount") != null){
 			buffer.append(getDetailsProperty("Children", relationsMap.get("ChildCount").toString(), evenColor));
 			relationsMap.remove("ChildCount");
 		}
+
+		if(relationsMap.get("ChildCount") != null){
+			buffer.append(getDetailsProperty("Children", relationsMap.get("ChildCount").toString(), evenColor));
+			relationsMap.remove("ChildCount");
+		}
+
 		if(relationsMap.get("InstanceCount") != null){
 			buffer.append(getDetailsProperty("Instances", relationsMap.get("InstanceCount").toString(), oddColor));
 			relationsMap.remove("InstanceCount");
@@ -61,8 +62,15 @@ public class ConceptDetailsDialog extends DetailsDialog {
 		
 		
 		int i = 0;
-		for (Object obj : relationsMap.keySet()) {
-			Object value = relationsMap.get(obj);
+		for (Map.Entry<String, Object> entry : relationsMap.entrySet()) {
+
+			String property = entry.getKey();
+			Object value = entry.getValue();
+
+			if(property.equals("@context")) {
+				continue;
+			}
+
 			String color = i % 2 == 0 ? evenColor : oddColor;
 			if (value != null) {
 				String text = HTMLUtil.replaceEOF(value.toString());
@@ -73,7 +81,7 @@ public class ConceptDetailsDialog extends DetailsDialog {
 					buffer.append("<tr>");
 					buffer.append("<td class=\"servBodL\" style=\"background-color:" + color
 							+ ";padding:7px;font-weight: bold;\" >");
-					buffer.append(obj.toString());
+					buffer.append(property);
 					buffer.append("</td>");
 					buffer.append("<td class=\"servBodL\" style=\"background-color:" + color + ";padding:7px;\" >");
 					buffer.append(text);
@@ -85,8 +93,7 @@ public class ConceptDetailsDialog extends DetailsDialog {
 		}
 		buffer.append("</table>");
 
-		String directLink = BioportalRESTServices.getConceptPropertiesURL(searchBean.getOntologyVersionId(),
-				searchBean.getConceptId()).toString();
+		String directLink = entity.getEntityLinks().getUi();
 		if (directLink != null && directLink.length() > 0) {
 			buffer.append("<div style=\"padding:5px;\"><br><b>Direct link in BioPortal:</b> ");
 			buffer.append("<a href=\"");
@@ -110,7 +117,7 @@ public class ConceptDetailsDialog extends DetailsDialog {
 			}
 		});
 
-		setTitle("Details for " + label + " [" + searchBean.getOntologyDisplayLabel() + "]");
+		setTitle("Details for " + label + " [" + entity.getPrefLabel() + "]");
 		setModal(true);
 		add(new JScrollPane(detailsPane));
 		pack();

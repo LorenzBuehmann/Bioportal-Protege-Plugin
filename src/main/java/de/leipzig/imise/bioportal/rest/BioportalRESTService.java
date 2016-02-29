@@ -73,6 +73,7 @@ public class BioportalRESTService {
 		String result = "";
 		try {
 			url = new URL(urlToGet);
+			System.out.println(url);
 			conn = (HttpURLConnection) url.openConnection();
 			conn.setRequestMethod("GET");
 			conn.setRequestProperty("Authorization", "apikey token=" + API_KEY);
@@ -175,12 +176,12 @@ public class BioportalRESTService {
 		return url;
 	}
 	
-	private static String getSearchTermString(String searchTerm, List<Integer> ontologyIds, boolean isExactMatch, boolean includeProperties){
+	private static String getSearchTermString(String searchTerm, List<String> ontologyIds, boolean isExactMatch, boolean includeProperties){
 		StringBuffer sb = new StringBuffer("?");
 		sb.append("q=").append(searchTerm).append("&");
 		if(!ontologyIds.isEmpty()){
 			sb.append(SEARCH_PROPERTY_ONTOLOGY_IDS);
-			for(Integer ontologyId : ontologyIds){
+			for(String ontologyId : ontologyIds){
 				sb.append(ontologyId);
 				sb.append(",");
 			}
@@ -194,7 +195,7 @@ public class BioportalRESTService {
 		return sb.toString();
 	}
 	
-	private static URL getSearchURL(String searchTerm, List<Integer> ontologyIds, boolean isExactMatch, boolean includeProperties){
+	private static URL getSearchURL(String searchTerm, List<String> ontologyIds, boolean isExactMatch, boolean includeProperties){
 		URL url = null;
 		try {
 			url = new URL(getUrlWithDefaultSuffix(getSearchTermString(searchTerm, ontologyIds, isExactMatch, includeProperties)));
@@ -204,7 +205,7 @@ public class BioportalRESTService {
 		return url;
 	}
 	
-	private static URL getSearchClassesURL(String searchTerm, List<Integer> ontologyIds, boolean isExactMatch, boolean includeProperties){
+	private static URL getSearchClassesURL(String searchTerm, List<String> ontologyIds, boolean isExactMatch, boolean includeProperties){
 		URL url = null;
 		StringBuffer sb = new StringBuffer(getSearchTermString(searchTerm, ontologyIds, isExactMatch, includeProperties));
 		sb.append("&");
@@ -218,7 +219,7 @@ public class BioportalRESTService {
 		return url;
 	}
 	
-	private static URL getSearchPropertiesURL(String searchTerm, List<Integer> ontologyIds, boolean isExactMatch, boolean includeProperties){
+	private static URL getSearchPropertiesURL(String searchTerm, List<String> ontologyIds, boolean isExactMatch, boolean includeProperties){
 		URL url = null;
 		StringBuffer sb = new StringBuffer(getSearchTermString(searchTerm, ontologyIds, isExactMatch, includeProperties));
 		sb.append("&");
@@ -318,7 +319,7 @@ public class BioportalRESTService {
 		return metrics;
 	}
 
-	public static Page getSearchResult(String searchTerm, List<Integer> ontologyIds, boolean isExactMatch, boolean includeProperties) {
+	public static Page getSearchResult(String searchTerm, List<String> ontologyIds, boolean isExactMatch, boolean includeProperties) {
 		String link = serviceLinks.get("search");
 
 		// Get the groups from the link we found
@@ -370,8 +371,8 @@ public class BioportalRESTService {
 		List<Ontology> ontologies = BioportalRESTService.getOntologies();
 		List<Group> groups = BioportalRESTService.getGroups();
 		List<Category> categories = BioportalRESTService.getCategories();
-		Page page = BioportalRESTService.getSearchResult("heart", Collections.<Integer>emptyList(), false, false);
-		List<Entity> entities = page.getEntity();
+		Page page = BioportalRESTService.getSearchResult("heart", Collections.<String>emptyList(), false, false);
+		List<Entity> entities = page.getEntities();
 		for (Entity entity : entities) {
 			System.out.println(entity.getId());
 		}

@@ -4,6 +4,7 @@ import java.awt.Cursor;
 import java.awt.event.MouseEvent;
 import java.util.List;
 
+import de.leipzig.imise.bioportal.rest.Entity;
 import org.jdesktop.swingx.JXTable;
 import org.jdesktop.swingx.decorator.HighlighterFactory;
 import org.ncbo.stanford.bean.search.SearchBean;
@@ -22,11 +23,11 @@ public class SearchResultTable extends JXTable {
 //		getColumn(5).setMaxWidth(30);
 	}
 	
-	public void setSearchResults(List<SearchBean> searchResults){
+	public void setSearchResults(List<Entity> searchResults){
 		((SearchResultTableModel)getModel()).setSearchResults(searchResults);
 	}
 	
-	public SearchBean getSearchBean(int row){
+	public Entity getSearchBean(int row){
 		return ((SearchResultTableModel)getModel()).getSearchBean(row);
 	}
 	
@@ -38,14 +39,14 @@ public class SearchResultTable extends JXTable {
         int colIndex = columnAtPoint(p);
         int realColumnIndex = convertColumnIndexToModel(colIndex);
         if(rowIndex >= 0){
-	        SearchBean searchBean = getSearchBean(rowIndex);
+			Entity searchBean = getSearchBean(rowIndex);
 	        
 	        switch(realColumnIndex){
-				case 0: tip = searchBean.getContents() + " (click to view in Bioportal)"; break;
-				case 1: tip = searchBean.getConceptIdShort(); break;
-				case 2: tip = searchBean.getOntologyDisplayLabel() + " (click to see ontology details)"; break;
-				case 3: tip = "Found term " + searchBean.getContents() + " in " + getValueAt(rowIndex, realColumnIndex); break;
-				case 4: tip = "Open the details window for " + searchBean.getContents(); break;
+				case 0: tip = searchBean.getEntityLinks().getUi() + " (click to view in Bioportal)"; break;
+				case 1: tip = searchBean.getPrefLabel(); break;
+				case 2: tip = searchBean.getEntityLinks().getOntology() + " (click to see ontology details)"; break;
+				case 3: tip = "Found term " + searchBean.getId() + " in " + getValueAt(rowIndex, realColumnIndex); break;
+				case 4: tip = "Open the details window for " + searchBean.getPrefLabel(); break;
 				case 5: tip = ""; break;
 				default: return super.getToolTipText(e);
 	        }

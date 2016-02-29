@@ -4,6 +4,7 @@ import de.leipzig.imise.bioportal.bean.ontologies.OntologyBean;
 import de.leipzig.imise.bioportal.cache.SearchCache;
 import de.leipzig.imise.bioportal.rest.BioportalRESTService;
 import de.leipzig.imise.bioportal.rest.Ontology;
+import de.leipzig.imise.bioportal.rest.Page;
 import org.ncbo.stanford.bean.search.SearchBean;
 
 import java.util.*;
@@ -71,12 +72,12 @@ public class BioportalManager {
 //		return searchCache.getSearchResults(searchTerm, ontologyIds, isExactMatch, includeProperties);
 	}
 	
-	public List<SearchBean> getSearchClassesResults(String searchTerm, List<Integer> ontologyIds, boolean isExactMatch, boolean includeProperties){
+	public Page getSearchClassesResults(String searchTerm, List<String> ontologyIds, boolean isExactMatch, boolean includeProperties){
 		List<String> ontIds = new ArrayList<>();
 		for(Ontology bean : selectedOntologies){
 			ontIds.add(bean.getId());
 		}
-		return searchCache.getSearchClassesResults(searchTerm, ontIds, isExactMatch, includeProperties);
+		return BioportalRESTService.getSearchResult(searchTerm, ontologyIds, isExactMatch, includeProperties);
 	}
 	
 	public List<SearchBean> getSearchPropertiesResults(String searchTerm, List<Integer> ontologyIds, boolean isExactMatch, boolean includeProperties){

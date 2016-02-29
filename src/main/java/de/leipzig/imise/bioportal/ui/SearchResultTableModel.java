@@ -1,15 +1,12 @@
 package de.leipzig.imise.bioportal.ui;
 
+import de.leipzig.imise.bioportal.BioportalViewComponent;
+import de.leipzig.imise.bioportal.rest.Entity;
+
+import javax.swing.*;
+import javax.swing.table.AbstractTableModel;
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.swing.Icon;
-import javax.swing.ImageIcon;
-import javax.swing.table.AbstractTableModel;
-
-import org.ncbo.stanford.bean.search.SearchBean;
-
-import de.leipzig.imise.bioportal.BioportalViewComponent;
 
 public class SearchResultTableModel extends AbstractTableModel {
 	
@@ -19,7 +16,7 @@ public class SearchResultTableModel extends AbstractTableModel {
 	private static final long serialVersionUID = -1006389200163898235L;
 	private static final Icon showDetailsIcon = new ImageIcon(BioportalViewComponent.class.getClassLoader().getResource("details.png"));
 	private static final Icon extractIcon = new ImageIcon(BioportalViewComponent.class.getClassLoader().getResource("extract.png"));
-	private List<SearchBean> searchResults = new ArrayList<SearchBean>();
+	private List<Entity> searchResults = new ArrayList<>();
 
 	public SearchResultTableModel() {
 
@@ -64,25 +61,25 @@ public class SearchResultTableModel extends AbstractTableModel {
 
 	@Override
 	public Object getValueAt(int row, int column) {
-		SearchBean searchBean = searchResults.get(row);
+		Entity searchBean = searchResults.get(row);
 		switch(column){
-			case 0: return getURLString(searchBean.getContents());
-			case 1: return searchBean.getConceptIdShort();
-			case 2: return getURLString(searchBean.getOntologyDisplayLabel());
-			case 3: return searchBean.getRecordType();
+			case 0: return searchBean.getPrefLabel();
+			case 1: return  getURLString(searchBean.getId());
+			case 2: return getURLString(searchBean.getEntityLinks().getOntology());
+			case 3: return searchBean.getMatchType();
 			case 4: return showDetailsIcon;
 			case 5: return extractIcon;
 			default: return null;
 		}
 	}
 	
-	public void setSearchResults(List<SearchBean> searchResults){
+	public void setSearchResults(List<Entity> searchResults){
 		this.searchResults.clear();
 		this.searchResults.addAll(searchResults);
 		fireTableDataChanged();
 	}
 	
-	public SearchBean getSearchBean(int row){
+	public Entity getSearchBean(int row){
 		return searchResults.get(row);
 	}
 	
