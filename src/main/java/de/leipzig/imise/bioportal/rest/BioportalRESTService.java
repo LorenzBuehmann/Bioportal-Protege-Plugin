@@ -3,6 +3,7 @@ package de.leipzig.imise.bioportal.rest;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import de.leipzig.imise.bioportal.bean.concept.ClassBean;
 import de.leipzig.imise.bioportal.util.BioportalConcept;
 import de.leipzig.imise.bioportal.util.BioportalOntology;
@@ -286,11 +287,14 @@ public class BioportalRESTService {
 
 		return result;
 	}
-	
+
+	/**
+	 * @return all ontologies
+	 */
 	public static List<Ontology> getOntologies(){
 		String link = serviceLinks.get("ontologies");
 
-		// Get the groups from the link we found
+		// Get the ontologies from the link we found
 		JsonNode rootNode = jsonToNode(get(link));
 
 		List<Ontology> result = new ArrayList<>();
@@ -348,7 +352,23 @@ public class BioportalRESTService {
 		BioportalConcept c = new BioportalConcept();
 		return c.getConceptProperties(getConceptPropertiesVirtualURL(ontologyVirtualId, conceptId));
 	}
-	
+
+	public static Collection<Entity> getChildren(Entity entity) {
+		Set<Entity> entities = new HashSet<>();
+
+		ArrayNode rootNode = (ArrayNode) jsonToNode(get(entity.getEntityLinks().getTree()));
+
+		Iterator<JsonNode> iterator = rootNode.iterator();
+		while (iterator.hasNext()) {
+			try {
+				entities.add(mapper.readValue(iterator.next().toString(), Entity.class));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+
+		return entities;
+	}
 
 	private static String encodeURI(String text) throws UnsupportedEncodingException {
 		return URLEncoder.encode(text, "UTF-8").toString().replaceAll("\\+", "%20");

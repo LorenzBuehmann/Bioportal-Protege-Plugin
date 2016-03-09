@@ -1,46 +1,18 @@
 package de.leipzig.imise.bioportal.ui;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.Frame;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.GridLayout;
-import java.awt.Insets;
+import de.leipzig.imise.bioportal.rest.Entity;
+import org.protege.editor.owl.OWLEditorKit;
+import org.semanticweb.owlapi.model.*;
+import org.semanticweb.owlapi.vocab.OWLRDFVocabulary;
+
+import javax.swing.*;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
-
-import javax.swing.DefaultListCellRenderer;
-import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
-import javax.swing.JComponent;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JList;
-import javax.swing.JPanel;
-
-import org.protege.editor.owl.OWLEditorKit;
-import org.semanticweb.owlapi.model.IRI;
-import org.semanticweb.owlapi.model.OWLAnnotationProperty;
-import org.semanticweb.owlapi.model.OWLDataProperty;
-import org.semanticweb.owlapi.model.OWLEntity;
-import org.semanticweb.owlapi.model.OWLObjectProperty;
-import org.semanticweb.owlapi.model.OWLOntology;
-import org.semanticweb.owlapi.vocab.OWLRDFVocabulary;
-
-import de.leipzig.imise.bioportal.bean.concept.ClassBean;
 
 public class DetailsPanel extends JPanel{
 	
@@ -52,25 +24,24 @@ public class DetailsPanel extends JPanel{
 	
 	private Set<DetailsEntry> entries = new HashSet<DetailsEntry>();
 	
-	public DetailsPanel(ClassBean cb, OWLEditorKit editorKit) {
+	public DetailsPanel(Entity cb, OWLEditorKit editorKit) {
 		this.editorKit = editorKit;
-		Map<Object, Object> relationsMap = cb.getRelations();
+		Map<String, Object> relationsMap = cb.getAdditionalProperties();
 		setLayout(new GridBagLayout());
 		
 		gbc.fill = GridBagConstraints.BOTH;
 		gbc.weighty = 1;
 		gbc.ipady = 5;
 		
-		addEntry("Id", cb.getId());
-		addEntry("Full Id", cb.getFullId());
-		addEntry("Label", cb.getLabel());
-		addEntry("Definitions", cb.getDefinitions());
-		addEntry("Synonyms", cb.getSynonyms());
+		addEntry("ID", cb.getId());
+		addEntry("Preferred Name", cb.getPrefLabel());
+		addEntry("Definitions", cb.getDefinition());
+		addEntry("Synonyms", cb.getSynonym());
 		
 		
-		for(Entry<Object, Object> entry : relationsMap.entrySet()){
+		for(Entry<String, Object> entry : relationsMap.entrySet()){
 			if(entry.getValue() != null){
-				addEntry(entry.getKey().toString(), entry.getValue());
+				addEntry(entry.getKey(), entry.getValue());
 			}
 		}
 	}

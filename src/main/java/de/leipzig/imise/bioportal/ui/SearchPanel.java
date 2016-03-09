@@ -2,19 +2,15 @@ package de.leipzig.imise.bioportal.ui;
 
 import de.leipzig.imise.bioportal.BioportalConstants;
 import de.leipzig.imise.bioportal.BioportalManager;
-import de.leipzig.imise.bioportal.BioportalRESTServices;
 import de.leipzig.imise.bioportal.bean.category.CategoryBean;
-import de.leipzig.imise.bioportal.bean.concept.ClassBean;
 import de.leipzig.imise.bioportal.bean.group.GroupBean;
 import de.leipzig.imise.bioportal.rest.*;
-import de.leipzig.imise.bioportal.util.PrivateOntologyException;
 import org.apache.log4j.Logger;
 import org.ncbo.stanford.bean.search.SearchBean;
 import org.protege.editor.core.ProtegeApplication;
 import org.protege.editor.core.ui.progress.BackgroundTask;
 import org.protege.editor.core.ui.util.CheckTable;
 import org.protege.editor.core.ui.util.CheckTableModel;
-import org.protege.editor.core.ui.util.NativeBrowserLauncher;
 import org.protege.editor.owl.OWLEditorKit;
 import org.protege.editor.owl.ui.list.OWLAxiomList;
 import org.semanticweb.owlapi.apibinding.OWLManager;
@@ -30,8 +26,6 @@ import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-import javax.swing.event.HyperlinkEvent;
-import javax.swing.event.HyperlinkListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
 import java.awt.event.*;
@@ -255,7 +249,7 @@ public class SearchPanel extends JPanel {
 //						} catch (UnsupportedEncodingException e2) {
 //							e2.printStackTrace();
 //						}
-//							createLazyClassHierarchyTree(searchResultTable.getSearchBean(row));
+							createLazyClassHierarchyTree(searchResultTable.getSearchBean(row));
 						break;
 						case 2:
 //							showOntologyDetailsDialog(searchResultTable.getSearchBean(row));
@@ -283,7 +277,7 @@ public class SearchPanel extends JPanel {
 	}
 
 	private void search() {
-		SearchTask searchTask = new SearchTask(searchField.getText(), Collections.<String>emptyList(),
+		SearchTask searchTask = new SearchTask(searchField.getText(), Collections.emptyList(),
 				exactMatchRadioButton.isSelected(), searchInAttributesBox.isSelected());
 		ProtegeApplication.getBackgroundTaskManager().startTask(searchTask);
 //		editorKit.getWorkspace().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
@@ -315,33 +309,33 @@ public class SearchPanel extends JPanel {
 		}
 	}
 	
-	private void createLazyClassHierarchyTree(final SearchBean searchBean){
-		ClassBean cb = null;
-		try {
-			cb = BioportalRESTServices.getConceptProperties(searchBean.getOntologyVersionId(), searchBean.getConceptId());
-		} catch (PrivateOntologyException e) {
-			e.printStackTrace();
-			String link = "http://bioportal.bioontology.org/ontologies/" + searchBean.getOntologyId() + "?p=terms";
-			String message = "This ontology is either private or licensed. " +
-					"Please go to <a href='" + link + "'>" + link + "</a> to get access to the ontology.";
-			JEditorPane pane = new JEditorPane("text/html", message);
-			pane.setEditable(false);
-			pane.setOpaque(false);
-			pane.addHyperlinkListener(new HyperlinkListener() {
-				
-				@Override
-				public void hyperlinkUpdate(HyperlinkEvent e) {
-					if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
-						NativeBrowserLauncher.openURL(e.getURL().toString());
-					}
-				}
-			});
-			JOptionPane optionPane = new JOptionPane(pane, JOptionPane.ERROR_MESSAGE, JOptionPane.DEFAULT_OPTION);
-			JDialog dlg = createDialog(this, "Access Error", optionPane, pane);
-	        dlg.setVisible(true);
-			return;
-		}
-		ImportDialog dialog = new ImportDialog(cb, searchBean, editorKit);
+	private void createLazyClassHierarchyTree(final Entity entity){
+//		ClassBean cb = null;
+//		try {
+//			cb = BioportalRESTService.getConceptProperties(entity.getEntityLinks().getUi());
+//		} catch (PrivateOntologyException e) {
+//			e.printStackTrace();
+//			String link = "http://bioportal.bioontology.org/ontologies/" + searchBean.getOntologyId() + "?p=terms";
+//			String message = "This ontology is either private or licensed. " +
+//					"Please go to <a href='" + link + "'>" + link + "</a> to get access to the ontology.";
+//			JEditorPane pane = new JEditorPane("text/html", message);
+//			pane.setEditable(false);
+//			pane.setOpaque(false);
+//			pane.addHyperlinkListener(new HyperlinkListener() {
+//
+//				@Override
+//				public void hyperlinkUpdate(HyperlinkEvent e) {
+//					if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
+//						NativeBrowserLauncher.openURL(e.getURL().toString());
+//					}
+//				}
+//			});
+//			JOptionPane optionPane = new JOptionPane(pane, JOptionPane.ERROR_MESSAGE, JOptionPane.DEFAULT_OPTION);
+//			JDialog dlg = createDialog(this, "Access Error", optionPane, pane);
+//	        dlg.setVisible(true);
+//			return;
+//		}
+		ImportDialog dialog = new ImportDialog(SwingUtilities.getWindowAncestor(this), entity, editorKit);
 		dialog.setVisible(true);
 	}
 	
@@ -492,8 +486,9 @@ public class SearchPanel extends JPanel {
 		
 		JDialog dialog = new JDialog();
 		dialog.add(new SearchPanel(null));
-		dialog.setPreferredSize(new Dimension(600, 600));
+		dialog.setPreferredSize(new Dimension(1200, 600));
 		dialog.pack();
+		dialog.setModalityType(Dialog.ModalityType.TOOLKIT_MODAL);
 		dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
 		dialog.setVisible(true);
 	}
