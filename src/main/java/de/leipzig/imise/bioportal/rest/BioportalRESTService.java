@@ -356,18 +356,62 @@ public class BioportalRESTService {
 	public static Collection<Entity> getChildren(Entity entity) {
 		Set<Entity> entities = new HashSet<>();
 
-		ArrayNode rootNode = (ArrayNode) jsonToNode(get(entity.getEntityLinks().getTree()));
+		ArrayNode rootNode = (ArrayNode) jsonToNode(get(entity.getEntityLinks().getChildren() + "?include=hasChildren,prefLabel,synonym,definition")).get("collection");
 
 		Iterator<JsonNode> iterator = rootNode.iterator();
 		while (iterator.hasNext()) {
 			try {
-				entities.add(mapper.readValue(iterator.next().toString(), Entity.class));
+				Entity child = mapper.readValue(iterator.next().toString(), Entity.class);
+				System.out.println(child);
+				entities.add(child);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		}
 
 		return entities;
+	}
+
+	public static Collection<Entity> getRoots(Entity entity) {
+		Set<Entity> entities = new HashSet<>();
+
+		ArrayNode rootNode = (ArrayNode) jsonToNode(get(entity.getEntityLinks().getTree()));
+
+		Iterator<JsonNode> iterator = rootNode.iterator();
+		while (iterator.hasNext()) {
+			try {
+				Entity child = mapper.readValue(iterator.next().toString(), Entity.class);
+				entities.add(child);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+
+		return entities;
+	}
+
+	public static Collection<List<Entity>> getPathsToRoot(Entity entity) {
+		List<List<Entity>> paths = new ArrayList<>();
+
+		// [p1[n1_1, ..., entity], p2[], ...]
+		ArrayNode pathsNode = (ArrayNode) jsonToNode(get(entity.getEntityLinks().getSelf() + "/paths_to_root"));
+
+		Iterator<JsonNode> iterator = pathsNode.iterator();
+		while (iterator.hasNext()) {
+			ArrayNode pathNode = (ArrayNode) iterator.next();
+			List<Entity> path = new ArrayList<>();
+			for(Iterator<JsonNode> nodeIterator = pathNode.iterator(); nodeIterator.hasNext();) {
+				try {
+					Entity child = mapper.readValue(nodeIterator.next().toString(), Entity.class);
+					path.add(child);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+			paths.add(path);
+		}
+
+		return paths;
 	}
 
 	private static String encodeURI(String text) throws UnsupportedEncodingException {

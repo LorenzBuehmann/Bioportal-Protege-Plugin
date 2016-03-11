@@ -484,7 +484,8 @@ public class SearchPanel extends JPanel {
 
 	public static void main(String[] args){
 		
-		JDialog dialog = new JDialog();
+		JDialog dialog = new JDialog(new JFrame("Bioportal"));
+		dialog.setType(JFrame.Type.UTILITY);
 		dialog.add(new SearchPanel(null));
 		dialog.setPreferredSize(new Dimension(1200, 600));
 		dialog.pack();

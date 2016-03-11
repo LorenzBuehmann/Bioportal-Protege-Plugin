@@ -77,7 +77,7 @@ public class ImportDialog extends JDialog {
 		UIManager.put("Tree.collapsedIcon", new IconUIResource(new NodeIcon('+')));
 		UIManager.put("Tree.expandedIcon", new IconUIResource(new NodeIcon('-')));
 
-		Collection<Entity> children = BioportalRESTService.getChildren(root);
+		Collection<Entity> children = BioportalRESTService.getRoots(root);
 		DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode(root);
 		if(children != null){
 			for (Entity child : children) {
