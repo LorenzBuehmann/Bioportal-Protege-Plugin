@@ -59,11 +59,17 @@ public class SearchPanel extends JPanel {
 	CheckTable<Ontology> ontologiesTable1;
 	private JTree classTree;
 
+	private final WaitLayerUI layerUI = new WaitLayerUI();
+
 	private OWLEditorKit editorKit;
 
 	public SearchPanel(OWLEditorKit editorKit) {
 		this.editorKit = editorKit;
+
+		// create the UI
 		createUI();
+
+		// fill comboboxes and table with data that can be used for filtering
 		initFilterData();
 
 		DETAILS_ICON_URL = this.getClass().getClassLoader().getResource("details.png").toString();
@@ -164,6 +170,9 @@ public class SearchPanel extends JPanel {
 		holderPanel.setLayout(new GridBagLayout());
 		GridBagConstraints gbc = new GridBagConstraints();
 		categoriesBox = new JComboBox();
+		DefaultComboBoxModel<Object> loadingCatsModel = new DefaultComboBoxModel<>();
+		loadingCatsModel.addElement("Loading categories...");
+		categoriesBox.setModel(loadingCatsModel);
 		categoriesBox.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -176,6 +185,9 @@ public class SearchPanel extends JPanel {
 		gbc.weightx = 1.0;
 		holderPanel.add(categoriesBox, gbc);
 		groupsBox = new JComboBox();
+		DefaultComboBoxModel<Object> loadingGroupsModel = new DefaultComboBoxModel<>();
+		loadingGroupsModel.addElement("Loading groups...");
+		groupsBox.setModel(loadingGroupsModel);
 		groupsBox.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -269,7 +281,7 @@ public class SearchPanel extends JPanel {
 		
 		JPanel searchResultPanel = new JPanel(new BorderLayout());
 		searchResultPanel.setBorder(new TitledBorder("Matching terms"));
-		searchResultPanel.add(new JScrollPane(searchResultTable), BorderLayout.CENTER);
+		searchResultPanel.add(new JLayer<JComponent>(new JScrollPane(searchResultTable), layerUI), BorderLayout.CENTER);
 		
 		add(splitPane, BorderLayout.NORTH);
 		add(searchResultPanel, BorderLayout.CENTER);
@@ -282,6 +294,7 @@ public class SearchPanel extends JPanel {
 		ProtegeApplication.getBackgroundTaskManager().startTask(searchTask);
 //		editorKit.getWorkspace().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 		searchButton.setEnabled(false);
+		layerUI.start();
 		searchTask.execute();
 	}
 
@@ -495,8 +508,8 @@ public class SearchPanel extends JPanel {
 	}
 	
 	private void updateOntologiesList(){
-		CategoryBean categoryBean = (CategoryBean)categoriesBox.getSelectedItem();
-		GroupBean groupBean = (GroupBean)groupsBox.getSelectedItem();
+		Category categoryBean = (Category)categoriesBox.getSelectedItem();
+		Group groupBean = (Group)groupsBox.getSelectedItem();
 		List<Ontology> ontologies = new ArrayList<>();
 		for(Ontology bean : BioportalManager.getInstance().getOntologies()){
 //			if( (categoryBean.getId() == 0000 || bean.getCategoryIds().contains(categoryBean.getId()))
@@ -535,6 +548,7 @@ public class SearchPanel extends JPanel {
 		
 		@Override
 		protected void done() {
+			layerUI.stop();
 			ProtegeApplication.getBackgroundTaskManager().endTask(this);
 			searchButton.setEnabled(true);
 			Page result;
