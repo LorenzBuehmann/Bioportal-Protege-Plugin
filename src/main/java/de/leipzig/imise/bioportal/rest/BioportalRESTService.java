@@ -8,6 +8,8 @@ import de.leipzig.imise.bioportal.bean.concept.ClassBean;
 import de.leipzig.imise.bioportal.util.BioportalConcept;
 import de.leipzig.imise.bioportal.util.BioportalOntology;
 import de.leipzig.imise.bioportal.util.PrivateOntologyException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -20,6 +22,9 @@ import java.net.URLEncoder;
 import java.util.*;
 
 public class BioportalRESTService {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(BioportalRESTService.class);
+
 	public static final String DEFAULT_BASE_URL = "http://data.bioontology.org";
 	public static final String STAGE_BASE_URL 	= "http://stagerest.bioontology.org/bioportal/";
 	public static final String SUFFIX_ONTOLOGIES = "ontologies/";
@@ -54,6 +59,7 @@ public class BioportalRESTService {
 	}
 
 	public static void init() {
+		LOGGER.info("Initializing BioPortal REST services...");
 		// Get the available resources
 		String resourcesString = get(DEFAULT_BASE_URL + "/");
 		JsonNode resources = jsonToNode(resourcesString);
@@ -74,7 +80,7 @@ public class BioportalRESTService {
 		String result = "";
 		try {
 			url = new URL(urlToGet);
-			System.out.println(url);
+			LOGGER.info("BioPortal request:" + url);
 			conn = (HttpURLConnection) url.openConnection();
 			conn.setRequestMethod("GET");
 			conn.setRequestProperty("Authorization", "apikey token=" + API_KEY);
@@ -89,36 +95,6 @@ public class BioportalRESTService {
 			e.printStackTrace();
 		}
 		return result;
-	}
-	
-	private static URL getBioportalCategoriesURL(){
-		URL url = null;
-		try {
-			url = new URL(getUrlWithDefaultSuffix(DEFAULT_BASE_URL + SUFFIX_CATEGORIES));
-		} catch (MalformedURLException e) {
-			e.printStackTrace();
-		}
-		return url;
-	}
-	
-	private static URL getBioportalGroupsURL(){
-		URL url = null;
-		try {
-			url = new URL(getUrlWithDefaultSuffix(DEFAULT_BASE_URL + SUFFIX_GROUPS));
-		} catch (MalformedURLException e) {
-			e.printStackTrace();
-		}
-		return url;
-	}
-	
-	private static URL getOntologiesURL(){
-		URL url = null;
-		try {
-			url = new URL(getUrlWithDefaultSuffix(DEFAULT_BASE_URL + SUFFIX_ONTOLOGIES));
-		} catch (MalformedURLException e) {
-			e.printStackTrace();
-		}
-		return url;
 	}
 	
 	public static URL getOntologyPropertiesURL(int ontologyId){
@@ -348,11 +324,6 @@ public class BioportalRESTService {
 		return c.getConceptProperties(getConceptPropertiesURL(ontologyVersionId, conceptId));
 	}
 	
-	public static ClassBean getConceptPropertiesVirtual(int ontologyVirtualId, String conceptId) throws PrivateOntologyException{
-		BioportalConcept c = new BioportalConcept();
-		return c.getConceptProperties(getConceptPropertiesVirtualURL(ontologyVirtualId, conceptId));
-	}
-
 	public static Collection<Entity> getChildren(Entity entity) {
 		Set<Entity> entities = new HashSet<>();
 
