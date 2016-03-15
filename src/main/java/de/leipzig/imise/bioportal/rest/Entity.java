@@ -226,4 +226,21 @@ public class Entity {
 	public String toString() {
 		return getId();
 	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (!(o instanceof Entity)) return false;
+
+		Entity entity = (Entity) o;
+
+		if (!Id.equals(entity.Id)) return false;
+
+		return true;
+	}
+
+	@Override
+	public int hashCode() {
+		return Id.hashCode();
+	}
 }

@@ -4,13 +4,15 @@ import de.leipzig.imise.bioportal.rest.Entity;
 
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeCellEditor;
+import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.TreeCellRenderer;
 import java.awt.*;
 
 /**
  * @author Lorenz Buehmann
  */
-public class EntityTreeCellRenderer implements TreeCellRenderer {
+public class EntityTreeCellRenderer extends DefaultTreeCellRenderer {
 	private JLabel label = new JLabel();
 
 	@Override

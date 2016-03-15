@@ -73,24 +73,39 @@ public class ImportDialog extends JDialog {
 		add(southPanel, BorderLayout.SOUTH);
 	}
 
-	private JTree createClassTree(final Entity root) {
+	private JTree createClassTree(final Entity entity) {
 		UIManager.put("Tree.collapsedIcon", new IconUIResource(new NodeIcon('+')));
 		UIManager.put("Tree.expandedIcon", new IconUIResource(new NodeIcon('-')));
 
-		Collection<Entity> children = BioportalRESTService.getRoots(root);
-		DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode(root);
-		if(children != null){
-			for (Entity child : children) {
-				Boolean hasChildren = (Boolean) child.getAdditionalProperties().get("hasChildren");
-				DefaultMutableTreeNode childNode = new DefaultMutableTreeNode(child);
-				if (hasChildren) {
-					childNode.add(new DefaultMutableTreeNode("Loading children..."));
-				}
-				rootNode.add(childNode);
-			}
-		}
-		final JTree tree = new JTree(rootNode);
+//		Collection<Entity> children = BioportalRESTService.getRoots(root);
+//		DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode(root);
+//		if(children != null){
+//			for (Entity child : children) {
+//				Boolean hasChildren = (Boolean) child.getAdditionalProperties().get("hasChildren");
+//				DefaultMutableTreeNode childNode = new DefaultMutableTreeNode(child);
+//				if (hasChildren) {
+//					childNode.add(new DefaultMutableTreeNode("Loading children..."));
+//				}
+//				rootNode.add(childNode);
+//			}
+//		}
+		// create the tree
+		final JTree tree = new JTree(BioportalRESTService.getTree(entity));
+
+		// expand all nodes
+//		JTreeUtils.expandAllNodes(tree, 0, tree.getRowCount());
+
+		// select the entity node
+		DefaultMutableTreeNode entityNode = JTreeUtils.searchNode((DefaultMutableTreeNode) tree.getModel().getRoot(), entity);
+		TreePath path = new TreePath(((DefaultTreeModel) tree.getModel()).getPathToRoot(entityNode));
+		tree.setExpandsSelectedPaths(true);
+		tree.setSelectionPath(path);
+		tree.scrollPathToVisible(path);
+
+		// set cell renderer to display entity label
 		tree.setCellRenderer(new EntityTreeCellRenderer());
+
+		// expand node action listener
 		tree.addTreeWillExpandListener(new TreeWillExpandListener() {
 
 			@Override
@@ -126,7 +141,7 @@ public class ImportDialog extends JDialog {
 //						} else {
 //							onShowDetails(entity);
 //						}
-						onShowDetails(entity);
+//						onShowDetails(entity);
 						
 						break;
 					} else {
@@ -137,6 +152,11 @@ public class ImportDialog extends JDialog {
 				
 			}
 		});
+		EntityTreeCellRenderer renderer =
+				(EntityTreeCellRenderer) tree.getCellRenderer();
+		renderer.setTextSelectionColor(Color.white);
+		renderer.setBackgroundSelectionColor(Color.blue);
+		renderer.setBorderSelectionColor(Color.black);
 //		tree.setCellRenderer(new DefaultTreeCellRenderer(){
 //			@Override
 //			public Component getTreeCellRendererComponent(JTree tree, Object value, boolean sel, boolean expanded,
