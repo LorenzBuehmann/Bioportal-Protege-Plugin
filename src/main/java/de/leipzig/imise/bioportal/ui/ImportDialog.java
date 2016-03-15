@@ -90,7 +90,12 @@ public class ImportDialog extends JDialog {
 //			}
 //		}
 		// create the tree
-		final JTree tree = new JTree(BioportalRESTService.getTree(entity));
+		DefaultMutableTreeNode root = BioportalRESTService.getTree(entity);
+//		JTreeUtils.sortTree(root);
+		final JTree tree = new JTree(root);
+		tree.setRootVisible(false);
+
+		tree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
 
 		// expand all nodes
 //		JTreeUtils.expandAllNodes(tree, 0, tree.getRowCount());
@@ -126,12 +131,13 @@ public class ImportDialog extends JDialog {
 			}
 		});
 		tree.addTreeSelectionListener(new TreeSelectionListener() {
-			
+
 			@Override
 			public void valueChanged(TreeSelectionEvent e) {
 				TreePath[] paths = e.getPaths();
 				for (int i=0; i<paths.length; i++) {
-					if (e.isAddedPath(i)) {tree.repaint();
+					if (e.isAddedPath(i)) {
+						tree.repaint();
 						DefaultMutableTreeNode node = (DefaultMutableTreeNode)paths[i].getLastPathComponent();
 						Entity entity = (Entity)node.getUserObject();
 //						if(!cb.getRelations().containsKey(ClassBean.SUB_CLASS_PROPERTY)){
@@ -142,14 +148,14 @@ public class ImportDialog extends JDialog {
 //							onShowDetails(entity);
 //						}
 //						onShowDetails(entity);
-						
+
 						break;
 					} else {
 						// This node has been deselected
 						break;
 					}
 				}
-				
+
 			}
 		});
 		EntityTreeCellRenderer renderer =

@@ -393,7 +393,7 @@ public class BioportalRESTService {
 		return entities;
 	}
 
-	public static MutableTreeNode getTree(Entity entity) {
+	public static DefaultMutableTreeNode getTree(Entity entity) {
 		Set<Entity> entities = new HashSet<>();
 
 		DefaultMutableTreeNode tree = new DefaultMutableTreeNode();
