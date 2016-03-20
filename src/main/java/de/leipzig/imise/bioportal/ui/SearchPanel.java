@@ -6,19 +6,34 @@ import de.leipzig.imise.bioportal.bean.category.CategoryBean;
 import de.leipzig.imise.bioportal.bean.group.GroupBean;
 import de.leipzig.imise.bioportal.rest.*;
 import org.apache.log4j.Logger;
+import org.eclipse.core.runtime.IExtensionRegistry;
 import org.ncbo.stanford.bean.search.SearchBean;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.FrameworkUtil;
 import org.protege.editor.core.ProtegeApplication;
+import org.protege.editor.core.editorkit.EditorKit;
+import org.protege.editor.core.plugin.PluginUtilities;
 import org.protege.editor.core.ui.progress.BackgroundTask;
 import org.protege.editor.core.ui.util.CheckTable;
 import org.protege.editor.core.ui.util.CheckTableModel;
 import org.protege.editor.owl.OWLEditorKit;
+import org.protege.editor.owl.OWLEditorKitFactory;
+import org.protege.editor.owl.ProtegeOWL;
+import org.protege.editor.owl.model.OWLModelManager;
+import org.protege.editor.owl.model.OWLModelManagerImpl;
+import org.protege.editor.owl.model.SaveErrorHandler;
+import org.protege.editor.owl.model.search.SearchManagerSelector;
+import org.protege.editor.owl.ui.error.OntologyLoadErrorHandlerUI;
+import org.protege.editor.owl.ui.explanation.ExplanationManager;
 import org.protege.editor.owl.ui.list.OWLAxiomList;
+import org.protege.editor.owl.ui.ontology.imports.missing.MissingImportHandlerUI;
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.io.OWLOntologyCreationIOException;
 import org.semanticweb.owlapi.io.OWLParser;
 import org.semanticweb.owlapi.io.OWLParserException;
 import org.semanticweb.owlapi.io.UnparsableOntologyException;
 import org.semanticweb.owlapi.model.*;
+import org.semanticweb.owlapi.util.VersionInfo;
 import uk.ac.manchester.cs.owlapi.modularity.ModuleType;
 import uk.ac.manchester.cs.owlapi.modularity.SyntacticLocalityModuleExtractor;
 
@@ -32,7 +47,12 @@ import java.awt.event.*;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.*;
@@ -59,7 +79,7 @@ public class SearchPanel extends JPanel {
 	CheckTable<Ontology> ontologiesTable1;
 	private JTree classTree;
 
-	private final WaitLayerUI layerUI = new WaitLayerUI();
+	private final WaitLayerUI layerUI = new WaitLayerUI("Searching");
 
 	private OWLEditorKit editorKit;
 
@@ -495,8 +515,72 @@ public class SearchPanel extends JPanel {
 		return sb.toString();
 	}
 
-	public static void main(String[] args){
+	private static BundleContext createDummyContext() {
+		return (BundleContext) Proxy.newProxyInstance(BundleContext.class.getClassLoader(),
+													  new Class[] { BundleContext.class }, new InvocationHandler() {
+					public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+						return null;
+					}
+				});
+	}
 
+	private static OWLEditorKit createDummyEditorKit() {
+		OWLEditorKit editorKit = new OWLEditorKit(new OWLEditorKitFactory()) {
+
+			@Override
+			public void setOWLModelManager(OWLModelManager modelManager) {
+				Field f = null;
+				try {
+					f = OWLEditorKit.class.getDeclaredField("modelManager");
+					f.setAccessible(true);
+				} catch (NoSuchFieldException e) {
+					e.printStackTrace();
+				}
+				try {
+					f.set(this, modelManager);
+				} catch (IllegalAccessException e) {
+					e.printStackTrace();
+				}
+			}
+
+			@Override
+			protected void initialise() {
+				OWLModelManager modelManager = new de.leipzig.imise.bioportal.util.OWLModelManagerImpl();
+				setOWLModelManager(modelManager);
+
+//				modelManager.setExplanationManager(new ExplanationManager(this));
+				modelManager.setMissingImportHandler(new MissingImportHandlerUI(this));
+				modelManager.setSaveErrorHandler(new SaveErrorHandler() {
+					@Override
+					public void handleErrorSavingOntology(OWLOntology ont, URI physicalURIForOntology,
+														  OWLOntologyStorageException e) throws Exception {
+					}
+				});
+
+//				ontologyChangeListener = owlOntologyChanges -> modifiedDocument = true;
+//				this.modelManager.addOntologyChangeListener(ontologyChangeListener);
+//
+//				searchManagerSelector = new SearchManagerSelector(this);
+
+				OntologyLoadErrorHandlerUI loadErrorHandler = new OntologyLoadErrorHandlerUI(this);
+
+				modelManager.setLoadErrorHandler(loadErrorHandler);
+
+//				getWorkspace().refreshComponents();
+			}
+
+			@Override
+			protected void initialiseCompleted() {
+
+			}
+		};
+		return editorKit;
+	}
+
+	public static void main(String[] args) throws Exception{
+		OWLOntology ont = OWLManager.createOWLOntologyManager().createOntology();
+		OWLEditorKit editorKit = createDummyEditorKit();
+		editorKit.getOWLModelManager().createNewOntology(new OWLOntologyID(IRI.create("http://test.org")), URI.create("http://test.org"));
 		SwingUtilities.invokeLater(new Runnable() {
 
 			@Override
@@ -504,7 +588,7 @@ public class SearchPanel extends JPanel {
 				JFrame dialog = new JFrame("Bioportal");
 				dialog.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 				dialog.setType(JFrame.Type.UTILITY);
-				dialog.add(new SearchPanel(null));
+				dialog.add(new SearchPanel(editorKit));
 				dialog.setPreferredSize(new Dimension(1200, 600));
 
 				dialog.pack();

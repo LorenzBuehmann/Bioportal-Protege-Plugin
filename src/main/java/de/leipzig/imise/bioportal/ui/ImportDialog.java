@@ -5,20 +5,17 @@ import de.leipzig.imise.bioportal.bean.concept.ClassBean;
 import de.leipzig.imise.bioportal.rest.BioportalRESTService;
 import de.leipzig.imise.bioportal.rest.Entity;
 import org.ncbo.stanford.bean.search.SearchBean;
-import org.ncbo.stanford.util.HTMLUtil;
 import org.protege.editor.core.ProtegeApplication;
 import org.protege.editor.core.ui.progress.BackgroundTask;
-import org.protege.editor.core.ui.util.NativeBrowserLauncher;
 import org.protege.editor.owl.OWLEditorKit;
 import org.semanticweb.owlapi.model.*;
-import org.semanticweb.owlapi.vocab.OWLRDFVocabulary;
 
 import javax.swing.*;
-import javax.swing.event.*;
-import javax.swing.plaf.BorderUIResource;
+import javax.swing.event.TreeExpansionEvent;
+import javax.swing.event.TreeSelectionEvent;
+import javax.swing.event.TreeSelectionListener;
+import javax.swing.event.TreeWillExpandListener;
 import javax.swing.plaf.IconUIResource;
-import javax.swing.text.html.HTMLDocument;
-import javax.swing.text.html.HTMLEditorKit;
 import javax.swing.tree.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -30,7 +27,6 @@ import java.util.concurrent.ExecutionException;
 public class ImportDialog extends JDialog {
 
 	private OWLEditorKit editorKit;
-	private JTree classTree;
 	private JEditorPane detailsPane;
 	private SearchBean searchBean;
 	
@@ -42,38 +38,56 @@ public class ImportDialog extends JDialog {
 	private DetailsPanel detailsPanel;
 	private JScrollPane scroll;
 
+	private final JTree classTree;
+
+	private final WaitLayerUI layerUI = new WaitLayerUI("Loading");
+
 	public ImportDialog(Window parent, Entity entity, final OWLEditorKit editorKit) {
 		super(parent);
-		this.searchBean = searchBean;
 		this.editorKit = editorKit;
 
 		setLayout(new BorderLayout());
 		setTitle("Import classes from " + entity.getEntityLinks().getOntology());
 		setModal(true);
-		setSize(600, 600);
+		setSize(1000, 600);
 		setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
 		setLocationRelativeTo(parent);
 
-		classTree = createClassTree(entity);
-		add(new JScrollPane(classTree), BorderLayout.WEST);
 
-//		JPanel detailsPanel = createDetailsPanel();
-//		add(detailsHolder, BorderLayout.EAST);
+		// the class tree on the left
+		classTree = new JTree();
+//		classTree.setPreferredSize(new Dimension(200, 0));
+		classTree.setRootVisible(false);
+		classTree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
+		JScrollPane treeScrollPane = new JScrollPane(classTree);
+		treeScrollPane.setPreferredSize(new Dimension(200, 0));
+		add(new JLayer<JComponent>(treeScrollPane, layerUI), BorderLayout.WEST);
 
+		// populate the tree
+		ClassTreeLoadingTask task = new ClassTreeLoadingTask(entity);
+		ProtegeApplication.getBackgroundTaskManager().startTask(task);
+		layerUI.start();
+		task.execute();
+
+		// the details panel in the right
+		detailsPanel = new DetailsPanel(editorKit);
+		add(detailsPanel, BorderLayout.CENTER);
+
+		// the import button at the bottom
 		JButton importButton = new JButton("Import");
 		importButton.addActionListener(new ActionListener() {
 
 			@Override
-			public void actionPerformed(ActionEvent arg0) {
+			public void actionPerformed(ActionEvent e) {
 				onImportClasses();
 			}
 		});
 		JPanel southPanel = new JPanel(new BorderLayout());
-		southPanel.add(importButton, BorderLayout.CENTER);
+		southPanel.add(importButton, BorderLayout.EAST);
 		add(southPanel, BorderLayout.SOUTH);
 	}
 
-	private JTree createClassTree(final Entity entity) {
+	private JTree createClassTree(Entity entity, DefaultMutableTreeNode root) {
 		UIManager.put("Tree.collapsedIcon", new IconUIResource(new NodeIcon('+')));
 		UIManager.put("Tree.expandedIcon", new IconUIResource(new NodeIcon('-')));
 
@@ -89,35 +103,32 @@ public class ImportDialog extends JDialog {
 //				rootNode.add(childNode);
 //			}
 //		}
-		// create the tree
-		DefaultMutableTreeNode root = BioportalRESTService.getTree(entity);
-//		JTreeUtils.sortTree(root);
-		final JTree tree = new JTree(root);
-		tree.setRootVisible(false);
 
-		tree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
+		((DefaultTreeModel) classTree.getModel()).setRoot(root);
+
+//		JTreeUtils.sortTree(root);
 
 		// expand all nodes
 //		JTreeUtils.expandAllNodes(tree, 0, tree.getRowCount());
 
 		// select the entity node
-		DefaultMutableTreeNode entityNode = JTreeUtils.searchNode((DefaultMutableTreeNode) tree.getModel().getRoot(), entity);
-		TreePath path = new TreePath(((DefaultTreeModel) tree.getModel()).getPathToRoot(entityNode));
-		tree.setExpandsSelectedPaths(true);
-		tree.setSelectionPath(path);
-		tree.scrollPathToVisible(path);
+		DefaultMutableTreeNode entityNode = JTreeUtils.searchNode((DefaultMutableTreeNode) classTree.getModel().getRoot(), entity);
+		TreePath path = new TreePath(((DefaultTreeModel) classTree.getModel()).getPathToRoot(entityNode));
+		classTree.setExpandsSelectedPaths(true);
+		classTree.setSelectionPath(path);
+		classTree.scrollPathToVisible(path);
 
 		// set cell renderer to display entity label
-		tree.setCellRenderer(new EntityTreeCellRenderer());
+		classTree.setCellRenderer(new EntityTreeCellRenderer());
 
 		// expand node action listener
-		tree.addTreeWillExpandListener(new TreeWillExpandListener() {
+		classTree.addTreeWillExpandListener(new TreeWillExpandListener() {
 
 			@Override
 			public void treeWillExpand(TreeExpansionEvent e) throws ExpandVetoException {
 				TreePath path = e.getPath();
 				DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
-				ExpandTreeWorker expandTreeTask = new ExpandTreeWorker(node, (DefaultTreeModel) tree.getModel());
+				ExpandTreeWorker expandTreeTask = new ExpandTreeWorker(node, (DefaultTreeModel) classTree.getModel());
 				ProtegeApplication.getBackgroundTaskManager().startTask(expandTreeTask);
 				setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 //				editorKit.getWorkspace().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
@@ -130,14 +141,16 @@ public class ImportDialog extends JDialog {
 
 			}
 		});
-		tree.addTreeSelectionListener(new TreeSelectionListener() {
+
+		// the selection listener
+		classTree.addTreeSelectionListener(new TreeSelectionListener() {
 
 			@Override
 			public void valueChanged(TreeSelectionEvent e) {
 				TreePath[] paths = e.getPaths();
 				for (int i=0; i<paths.length; i++) {
 					if (e.isAddedPath(i)) {
-						tree.repaint();
+						classTree.repaint();
 						DefaultMutableTreeNode node = (DefaultMutableTreeNode)paths[i].getLastPathComponent();
 						Entity entity = (Entity)node.getUserObject();
 //						if(!cb.getRelations().containsKey(ClassBean.SUB_CLASS_PROPERTY)){
@@ -147,7 +160,7 @@ public class ImportDialog extends JDialog {
 //						} else {
 //							onShowDetails(entity);
 //						}
-//						onShowDetails(entity);
+						onShowDetails(entity);
 
 						break;
 					} else {
@@ -159,7 +172,7 @@ public class ImportDialog extends JDialog {
 			}
 		});
 		EntityTreeCellRenderer renderer =
-				(EntityTreeCellRenderer) tree.getCellRenderer();
+				(EntityTreeCellRenderer) classTree.getCellRenderer();
 		renderer.setTextSelectionColor(Color.white);
 		renderer.setBackgroundSelectionColor(Color.blue);
 		renderer.setBorderSelectionColor(Color.black);
@@ -184,233 +197,17 @@ public class ImportDialog extends JDialog {
 //				return c;
 //			}
 //		});
-		return tree;
+		return classTree;
 	}
 
-	private JPanel createDetailsPanel() {
-		JPanel panel = new JPanel();
-		panel.setLayout(new BorderLayout());
-		detailsPane = new JEditorPane();
-		detailsPane.setEditable(false);
-		detailsPane.setEditorKit(new HTMLEditorKit());
-
-		Font font = UIManager.getFont("Label.font");
-		String bodyRule = "body { font-family: " + font.getFamily() + "; " + "font-size: " + font.getSize() + "pt; }";
-		((HTMLDocument) detailsPane.getDocument()).getStyleSheet().addRule(bodyRule);
-		// ((HTMLDocument)detailsPane.getDocument()).getStyleSheet().addRule(TableCss.CSS);
-
-		detailsPane.setBorder(BorderUIResource.getEtchedBorderUIResource());
-		detailsPane.addHyperlinkListener(new HyperlinkListener() {
-			public void hyperlinkUpdate(HyperlinkEvent e) {
-				if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
-					NativeBrowserLauncher.openURL(e.getURL().toString());
-				}
-			}
-		});
-
-		JScrollPane scrollPane = new JScrollPane(detailsPane);
-		scrollPane.setAutoscrolls(true);
-		panel.add(scrollPane, BorderLayout.CENTER);
-		return panel;
-	}
 
 	private void onShowDetails(Entity entity) {
-//		if(lastSelected != null){
-//			node2SelectedRelations.put(cb, getSelectedRelations(detailsPane));
-//		}
-		
-		
-//		detailsPane.scrollRectToVisible(new Rectangle(0, 0, 100, 10));
-//
-//		if (cb == null) {
-//			detailsPane.setText("No class selected in BioPortal tree.");
-//			return;
-//		}
-//
-//		detailsPane.setText("Fetching properties from BioPortal...");
-//
-//		StringBuffer buffer = new StringBuffer();
-//		buffer.append("<html><body>");
-//		buffer.append("<table width=\"100%\" class=\"servicesT\" style=\"border-collapse:collapse;border-width:0px;padding:5px\"><tr>");
-//
-//		buffer.append("<td class=\"servHd\" style=\"background-color:#8E798D;color:#FFFFFF;\">Property</td>");
-//		buffer.append("<td class=\"servHd\" style=\"background-color:#8E798D;color:#FFFFFF;\">Value</td>");
-//		buffer.append("<td class=\"servHd\" style=\"background-color:#8E798D;color:#FFFFFF;\"></td>");
-//
-//		int i = 0;
-//		i = setBufferText(buffer, "ID", cb.getId(), i);
-//		i = setBufferText(buffer, "Full Id", "<a href=\"" + cb.getFullId() + "\">" + cb.getFullId(), i);
-//		i = setBufferText(buffer, "Label", HTMLUtil.replaceEOF(getDisplayText(cb.getLabel())), i);
-//		i = setBufferText(buffer, "Definitions", HTMLUtil.replaceEOF(getDisplayText(cb.getDefinitions())), i);
-//		i = setBufferText(buffer, "Synonyms", HTMLUtil.replaceEOF(getDisplayText(cb.getSynonyms())), i);
-//		Map<Object, Object> relationsMap = cb.getRelations();
-//		
-//		System.out.println(relationsMap);
-//
-//		TreeMap<Object, Object> t = new TreeMap<Object, Object>(new NameComparator());
-//		t.putAll(relationsMap);
-//		for (Object obj : t.keySet()) {
-//			Object value = relationsMap.get(obj);
-//			if (value != null) {
-//				String text = "";
-//				if (value instanceof List && ((List<Object>) value).size() != 0) {
-//					Iterator<Object> itr = ((List<Object>) value).iterator();
-//					while (itr.hasNext()) {
-//						Object obj2 = itr.next();
-//						if (obj2 instanceof ClassBean) {
-//							text += "<a href=\"" + ((ClassBean) obj2).getFullId() + "\">"
-//									+ ((ClassBean) obj2).getLabel() + "</a><br/>";
-//						} else {
-//							text += HTMLUtil.replaceEOF(getDisplayText(obj2)) + "<br/>";
-//						}
-//					}
-//				} else {
-//					text = HTMLUtil.replaceEOF(getDisplayText(value));
-//				}
-//				i = setBufferText(buffer, obj, text, i);
-//			}
-//		}
-//		buffer.append("</table>");
-//
-//		String directLink = BioportalRESTServices.getUrlWithDefaultSuffix(BioPortalUtil.getVisualizationURL(BioportalRESTServices.DEFAULT_BASE_URL, String.valueOf(searchBean.getOntologyId()),
-//				cb.getId()));
-//
-//		if (directLink != null && directLink.length() > 0) {
-//			buffer.append("<div style=\"padding:5px;\"><br><b>Direct link in BioPortal:</b> ");
-//			buffer.append("<a href=\"");
-//			buffer.append(directLink);
-//			buffer.append("\">");
-//			buffer.append(directLink);
-//			buffer.append("</a></div>");
-//			buffer.append("<br>"); // important in order to avoid automatic
-//									// horizontal scrolling to the right end of
-//									// the page when displaying very long URLs
-//		}
-//		buffer.append("</body></html>");
-//		detailsPane.setText(buffer.toString());
-//
-//		detailsPane.scrollRectToVisible(new Rectangle(0, 0, 100, 10));
-//		detailsPane.setCaretPosition(0);
-		if(scroll != null){
-			remove(scroll);
-		}
-		detailsPanel = node2Details.get(entity);
-		if(detailsPanel == null){
-			detailsPanel = new DetailsPanel(entity, editorKit);
-			node2Details.put(entity, detailsPanel);
-		}
-		
-		scroll = new JScrollPane(detailsPanel);
-		add(scroll, BorderLayout.CENTER);
-		lastSelected = entity;
-		revalidate();
+		// get details for entity
+		entity = BioportalRESTService.getEntityDetails(entity);
+
+		detailsPanel.showDetails(entity);
 	}
 	
-//	private Set<String> getSelectedRelations(JEditorPane editor){
-//		Set<String> selectedRelations = new HashSet<String>();
-//		HTMLDocument doc = (HTMLDocument)editor.getDocument();
-//        ElementIterator it = new ElementIterator(doc);
-//        Element element;
-//
-//        while ( (element = it.next()) != null )
-//        {
-//            System.out.println();
-//
-//            AttributeSet as = element.getAttributes();
-//            Enumeration enumm = as.getAttributeNames();
-//
-//            while( enumm.hasMoreElements() )
-//            {
-//                Object name = enumm.nextElement();
-//                Object value = as.getAttribute( name );
-//                
-//                if(value instanceof JToggleButton.ToggleButtonModel){
-//                	if(((JToggleButton.ToggleButtonModel)value).isSelected()){
-//                		Enumeration e = as.getAttributeNames();
-//                        while( e.hasMoreElements() ){
-//                        	Object o = e.nextElement();
-//                        	if(o instanceof HTML.Attribute && o.toString().equals("name")){
-//                        		selectedRelations.add(as.getAttribute(o).toString());
-//                        	}
-//                        }
-//                	}
-//                	
-//                }
-//
-//            }
-//        }
-//        return selectedRelations;
-//	}
-
-	private String getDisplayText(Object value) {
-		return HTMLUtil.makeHTMLLinks(value.toString());
-	}
-
-	private String getDisplayText(Object value, int maxLength) {
-		return HTMLUtil.makeHTMLLinks(value.toString(), maxLength);
-	}
-
-	private String getDisplayText(Collection<?> values) {
-		StringBuffer buffer = new StringBuffer();
-		if (values == null) {
-			return buffer.toString();
-		}
-		for (Iterator<?> iterator = values.iterator(); iterator.hasNext();) {
-			Object object = iterator.next();
-			buffer.append(getDisplayText(object));
-			buffer.append(", ");
-		}
-		if (buffer.length() > 2) {
-			return buffer.substring(0, buffer.length() - 2);
-		}
-		return buffer.toString();
-	}
-
-	private String getDisplayText(Collection<?> values, int maxLength) {
-		StringBuffer buffer = new StringBuffer();
-		if (values == null) {
-			return buffer.toString();
-		}
-		for (Iterator<?> iterator = values.iterator(); iterator.hasNext();) {
-			Object object = iterator.next();
-			buffer.append(getDisplayText(object, maxLength));
-			buffer.append(", ");
-		}
-		if (buffer.length() > 2) {
-			return buffer.substring(0, buffer.length() - 2);
-		}
-		return buffer.toString();
-	}
-
-	private int setBufferText(StringBuffer buffer, Object obj, String text, int i) {
-		String oddColor = "#F4F2F3";
-		String evenColor = "#E6E6E5";
-		String color = i % 2 == 0 ? evenColor : oddColor;
-		if (text.startsWith("[")) {
-			text = text.substring(1, text.length() - 1);
-		}
-		if (text.length() > 0) {
-			buffer.append("<tr>");
-			
-			buffer.append("<td class=\"servBodL\" style=\"background-color:" + color
-					+ ";padding:7px;font-weight: bold;\" >");
-			buffer.append(getDisplayText(obj));
-			buffer.append("</td>");
-			
-			buffer.append("<td class=\"servBodL\" style=\"background-color:" + color + ";padding:7px;\" >");
-			buffer.append(text);
-			buffer.append("</td>");
-			
-			buffer.append("<td class=\"servBodL\" style=\"background-color:" + color + ";padding:7px;\" >");
-			buffer.append("<input type=\"checkbox\" name=\"" + obj.toString() +  "\" value=\"value\" />");
-			buffer.append("</td>");
-			
-			buffer.append("</tr>");
-			i++;
-		}
-		return i;
-	}
-
 	private void onImportClasses() {
 //		Set<Object> selectedValues = detailsPanel.getSelectedValues();
 		TreePath[] selection = classTree.getSelectionPaths();
@@ -440,42 +237,39 @@ public class ImportDialog extends JDialog {
 		}
 	}
 
-	private OWLClass convert(Entity cb) {
+	private OWLClass convert(Entity entity) {
 		OWLDataFactory dataFactory = editorKit.getOWLModelManager().getOWLOntologyManager().getOWLDataFactory();
-		OWLClass cls = dataFactory.getOWLClass(IRI.create(cb.getId()));
-		addMetaData(cb);
+		OWLClass cls = dataFactory.getOWLClass(IRI.create(entity.getId()));
+		addMetaData(entity);
 		return cls;
 	}
 
-	private void addMetaData(Entity cb) {
+	private void addMetaData(Entity entity) {
 		OWLDataFactory dataFactory = editorKit.getOWLModelManager().getOWLOntologyManager().getOWLDataFactory();
-		OWLClass cls = dataFactory.getOWLClass(IRI.create(cb.getId()));
-		OWLOntology ontology = editorKit.getOWLModelManager().getActiveOntology();
-		String label = cb.getPrefLabel();
-		OWLAnnotation labelAnno = dataFactory.getOWLAnnotation(
-				dataFactory.getOWLAnnotationProperty(OWLRDFVocabulary.RDFS_LABEL.getIRI()),
-				dataFactory.getOWLLiteral(label));
-		OWLAxiom ax = dataFactory.getOWLAnnotationAssertionAxiom(cls.getIRI(), labelAnno);
-		editorKit.getOWLModelManager().getOWLOntologyManager().addAxiom(ontology, ax);
 		
-		Set<String> selectedRelations = node2SelectedRelations.get(cb);
-		if(selectedRelations == null){
-//			selectedRelations = getSelectedRelations(detailsPane);
-		}
-		DetailsPanel details = node2Details.get(cb);
-		if(details != null){
-			Map<String, Set<Object>> selectedValues = details.getSelectedValues();
-			System.out.println("Additional meta data: " + selectedValues);
-			for(Entry<String, Set<Object>> entry : selectedValues.entrySet()){
-				String relation = entry.getKey();
-				Set<Object> values = entry.getValue();
-				for (Object value : values) {
-					OWLAnnotation anno = dataFactory.getOWLAnnotation(
-							dataFactory.getOWLAnnotationProperty(IRI.create(relation)),
-							dataFactory.getOWLLiteral(value.toString()));
-					ax = dataFactory.getOWLAnnotationAssertionAxiom(cls.getIRI(), anno);
-					editorKit.getOWLModelManager().getOWLOntologyManager().addAxiom(ontology, ax);
-				}
+		OWLClass cls = dataFactory.getOWLClass(IRI.create(entity.getId()));
+		
+		OWLOntology ontology = editorKit.getOWLModelManager().getActiveOntology();
+
+		Map<OWLProperty, String> selectedValues = detailsPanel.getSelectedValues(entity);
+
+		for(Entry<OWLProperty, String> entry : selectedValues.entrySet()) {
+			OWLProperty property = entry.getKey();
+			String value = entry.getValue();
+
+			OWLAxiom ax;
+			if(property.isOWLAnnotationProperty()) {
+				OWLAnnotation anno = dataFactory.getOWLAnnotation(
+						property.asOWLAnnotationProperty(),
+						dataFactory.getOWLLiteral(value));
+
+				ax = dataFactory.getOWLAnnotationAssertionAxiom(cls.getIRI(), anno);
+
+				editorKit.getOWLModelManager().getOWLOntologyManager().addAxiom(ontology, ax);
+			} else if(property.isOWLDataProperty()) {
+
+			} else {
+
 			}
 		}
 	}
@@ -559,12 +353,35 @@ public class ImportDialog extends JDialog {
 
 	}
 
-	class NameComparator implements Comparator<Object> {
-		public int compare(Object o1, Object o2) {
-			String s1 = getDisplayText(o1);
-			String s2 = getDisplayText(o2);
-			return s1.compareToIgnoreCase(s2);
+	class ClassTreeLoadingTask extends SwingWorker<DefaultMutableTreeNode, Void> implements BackgroundTask {
+
+		Entity entity;
+
+		public ClassTreeLoadingTask(Entity entity) {
+			this.entity = entity;
 		}
+
+		@Override
+		protected DefaultMutableTreeNode doInBackground() throws Exception {
+			return BioportalRESTService.getTree(entity);
+		}
+
+		@Override
+		protected void done() {
+			layerUI.stop();
+			ProtegeApplication.getBackgroundTaskManager().endTask(this);
+			DefaultMutableTreeNode result;
+			try {
+				result = get();
+				createClassTree(entity, result);
+//				editorKit.getWorkspace().setCursor(Cursor.getDefaultCursor());
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			} catch (ExecutionException e) {
+				e.printStackTrace();
+			}
+		}
+
 	}
 
 }

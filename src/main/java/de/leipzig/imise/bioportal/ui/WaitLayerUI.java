@@ -23,6 +23,15 @@ class WaitLayerUI extends LayerUI<JComponent> implements ActionListener {
 	private int mAngle;
 	private int mFadeCount;
 	private int mFadeLimit = 15;
+	private String message;
+
+	public WaitLayerUI(){
+		this(null);
+	}
+
+	public WaitLayerUI(String message) {
+		this.message = message;
+	}
 
 	@Override
 	public void paint(Graphics g, JComponent c) {
@@ -55,6 +64,22 @@ class WaitLayerUI extends LayerUI<JComponent> implements ActionListener {
 		g2.setStroke(
 				new BasicStroke(s / 4, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
 		g2.setPaint(Color.white);
+
+		if(message != null) {
+			Font font = new Font("Serif", Font.PLAIN, 96);
+			g2.setFont(font);
+			FontMetrics metrics = g.getFontMetrics(font);
+			int stringWidth = metrics.stringWidth(message);
+			// Find out how much the font can grow in width.
+			double widthRatio = (double)w / (double)stringWidth;
+			int newFontSize = (int)(font.getSize() * widthRatio);
+			font = new Font(font.getName(), Font.PLAIN, newFontSize);
+			g2.setFont(font);
+			metrics = g.getFontMetrics(font);
+			g2.drawString(message + " ...", (cx - metrics.stringWidth(message)/2), (cy));
+		}
+
+
 		g2.rotate(Math.PI * mAngle / 180, cx, cy);
 		for (int i = 0; i < 12; i++) {
 			float scale = (11.0f - (float) i) / 11.0f;

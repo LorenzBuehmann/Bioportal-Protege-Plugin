@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
+import com.google.common.collect.Sets;
 import com.google.common.hash.HashCode;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hasher;
@@ -54,6 +55,8 @@ public class BioportalRESTService {
 	public final static String API_KEY_PARAM = "apikey";	
 	public static final String BP_PRODUCTION_PROTEGE_API_KEY = API_KEY_PARAM + "=8fadfa2c-47de-4487-a1f5-b7af7378d693";
 	public static final String API_KEY = "8fadfa2c-47de-4487-a1f5-b7af7378d693";
+
+	public static final Set<String> META_PROPERTIES = Sets.newHashSet("links", "@context", "hasChildren", "children");
 
 	static final ObjectMapper mapper = new ObjectMapper();
 
@@ -373,6 +376,19 @@ public class BioportalRESTService {
 		BioportalConcept c = new BioportalConcept();
 		return c.getConceptProperties(getConceptPropertiesURL(ontologyVersionId, conceptId));
 	}
+
+	public static Entity getEntityDetails(Entity entity) {
+		JsonNode node = jsonToNode(get(entity.getEntityLinks().getSelf() + "?include=hasChildren,prefLabel,synonym,definition"));
+
+		try {
+			Entity detailedEntity = mapper.readValue(node.toString(), Entity.class);
+			return detailedEntity;
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		return null;
+	}
 	
 	public static Collection<Entity> getChildren(Entity entity) {
 		Set<Entity> entities = new HashSet<>();
@@ -383,7 +399,6 @@ public class BioportalRESTService {
 		while (iterator.hasNext()) {
 			try {
 				Entity child = mapper.readValue(iterator.next().toString(), Entity.class);
-				System.out.println(child);
 				entities.add(child);
 			} catch (IOException e) {
 				e.printStackTrace();
