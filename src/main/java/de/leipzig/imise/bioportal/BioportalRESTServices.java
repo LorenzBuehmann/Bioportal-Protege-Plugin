@@ -1,5 +1,17 @@
 package de.leipzig.imise.bioportal;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import de.leipzig.imise.bioportal.bean.category.CategoryBean;
+import de.leipzig.imise.bioportal.bean.concept.ClassBean;
+import de.leipzig.imise.bioportal.bean.group.GroupBean;
+import de.leipzig.imise.bioportal.bean.ontologies.OntologyBean;
+import de.leipzig.imise.bioportal.util.*;
+import org.ncbo.stanford.bean.search.Page;
+import org.ncbo.stanford.bean.search.SearchBean;
+import org.ncbo.stanford.bean.search.SearchResultListBean;
+
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
@@ -7,25 +19,6 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.util.Collections;
 import java.util.List;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.ncbo.stanford.bean.search.Page;
-import org.ncbo.stanford.bean.search.SearchBean;
-import org.ncbo.stanford.bean.search.SearchResultListBean;
-
-import de.leipzig.imise.bioportal.bean.category.CategoryBean;
-import de.leipzig.imise.bioportal.bean.concept.ClassBean;
-import de.leipzig.imise.bioportal.bean.group.GroupBean;
-import de.leipzig.imise.bioportal.bean.ontologies.OntologyBean;
-import de.leipzig.imise.bioportal.util.BioportalCategories;
-import de.leipzig.imise.bioportal.util.BioportalConcept;
-import de.leipzig.imise.bioportal.util.BioportalGroups;
-import de.leipzig.imise.bioportal.util.BioportalOntologies;
-import de.leipzig.imise.bioportal.util.BioportalOntology;
-import de.leipzig.imise.bioportal.util.BioportalSearch;
-import de.leipzig.imise.bioportal.util.PrivateOntologyException;
 
 public class BioportalRESTServices {
 	public static final String DEFAULT_BASE_URL = "http://data.bioontology.org/";
@@ -318,12 +311,5 @@ public class BioportalRESTServices {
 	        return url + getDefaultRestSuffix();
 	}
 	
-	public static void main(String[] args) throws Exception{
-		BioportalRESTServices.getOntologies();
-//		BioportalRESTServices.getGroups();
-//		BioportalRESTServices.getCategories();
-////		BioportalRESTServices.getSearchResults("heart", Collections.<Integer>emptyList(), false, false);
-//		System.out.println(BioportalRESTServices.getConceptPropertiesVirtual(1516, "O80-O84.9").getRelations().get(ClassBean.SUB_CLASS_PROPERTY));
-	}
 
 }

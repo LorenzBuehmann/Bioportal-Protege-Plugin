@@ -29,6 +29,12 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 })
 public class Entity {
 
+	public static Entity TOP_ENTITY = new Entity();
+	static {
+		TOP_ENTITY.setId("TOP");
+		TOP_ENTITY.setPrefLabel("TOP");
+	}
+
 	@JsonProperty("prefLabel")
 	private String prefLabel;
 	@JsonProperty("synonym")

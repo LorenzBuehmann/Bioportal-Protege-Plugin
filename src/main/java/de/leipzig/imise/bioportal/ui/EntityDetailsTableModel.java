@@ -16,7 +16,9 @@ import java.util.Map;
  */
 public class EntityDetailsTableModel extends AbstractTableModel{
 
-	List<List<Object>> data = new ArrayList<>();
+	private String[] columnNames = { "", "Property", "Value", "Map To" };
+
+	private List<List<Object>> data = new ArrayList<>();
 
 	public EntityDetailsTableModel() {}
 
@@ -59,7 +61,12 @@ public class EntityDetailsTableModel extends AbstractTableModel{
 
 	@Override
 	public int getColumnCount() {
-		return 4;
+		return columnNames.length;
+	}
+
+	@Override
+	public String getColumnName(int column) {
+		return columnNames[column];
 	}
 
 	@Override
@@ -69,6 +76,7 @@ public class EntityDetailsTableModel extends AbstractTableModel{
 
 	@Override
 	public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
+		System.out.println("set " + aValue + " at " + rowIndex + "," + columnIndex);
 		data.get(rowIndex).set(columnIndex, aValue);
 		fireTableCellUpdated(rowIndex, columnIndex);
 	}
@@ -80,17 +88,6 @@ public class EntityDetailsTableModel extends AbstractTableModel{
 			case 3:return OWLProperty.class;
 		}
 		return super.getColumnClass(columnIndex);
-	}
-
-	@Override
-	public String getColumnName(int column) {
-		switch (column) {
-			case 0: return "";
-			case 1: return "Property";
-			case 2: return "Value";
-			case 3: return "Map To";
-		}
-		return super.getColumnName(column);
 	}
 
 	@Override

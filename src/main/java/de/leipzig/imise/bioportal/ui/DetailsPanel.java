@@ -2,12 +2,12 @@ package de.leipzig.imise.bioportal.ui;
 
 import de.leipzig.imise.bioportal.rest.Entity;
 import org.jdesktop.swingx.JXComboBox;
-import org.jdesktop.swingx.JXTable;
 import org.jdesktop.swingx.autocomplete.AutoCompleteDecorator;
 import org.protege.editor.owl.OWLEditorKit;
 import org.semanticweb.owlapi.model.*;
 import org.semanticweb.owlapi.model.parameters.Imports;
 import org.semanticweb.owlapi.vocab.OWLRDFVocabulary;
+import org.semanticweb.owlapi.vocab.SKOSVocabulary;
 
 import javax.swing.*;
 import javax.swing.event.PopupMenuEvent;
@@ -21,6 +21,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
+import static org.semanticweb.owlapi.vocab.OWLRDFVocabulary.*;
+
 public class DetailsPanel extends JPanel{
 	
 	private int entryNumber = 0;
@@ -32,7 +34,7 @@ public class DetailsPanel extends JPanel{
 	Map<Entity, EntityDetailsTableModel> entity2Model = new HashMap<>();
 
 	JLabel label;
-	JXTable table;
+	JTable table;
 	
 	public DetailsPanel(OWLEditorKit editorKit) {
 		this.editorKit = editorKit;
@@ -77,13 +79,13 @@ public class DetailsPanel extends JPanel{
 
 		table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 		resizeColumnWidth(table);
-		table.getColumn(0).setMinWidth(25);
-		table.getColumn(0).setMaxWidth(25);
+		table.getColumnModel().getColumn(0).setMinWidth(25);
+		table.getColumnModel().getColumn(0).setMaxWidth(25);
 		table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
 	}
 
 	private void createTable() {
-		table = new JXTable();
+		table = new JTable();
 		table.setShowGrid(false);
 		table.setModel(new EntityDetailsTableModel());
 
@@ -145,8 +147,8 @@ public class DetailsPanel extends JPanel{
 
 		table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 		resizeColumnWidth(table);
-		table.getColumn(0).setMinWidth(25);
-		table.getColumn(0).setMaxWidth(25);
+		table.getColumnModel().getColumn(0).setMinWidth(25);
+		table.getColumnModel().getColumn(0).setMaxWidth(25);
 		table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
 
 		JScrollPane scrollPane = new JScrollPane(table);
@@ -174,10 +176,10 @@ public class DetailsPanel extends JPanel{
 		OWLOntology ont = editorKit.getOWLModelManager().getActiveOntology();
 		OWLDataFactory df = editorKit.getOWLModelManager().getOWLDataFactory();
 
-		properties.addAll(ont.getObjectPropertiesInSignature(Imports.INCLUDED));
-		properties.addAll(ont.getDataPropertiesInSignature(Imports.INCLUDED));
+//		properties.addAll(ont.getObjectPropertiesInSignature(Imports.INCLUDED));
+//		properties.addAll(ont.getDataPropertiesInSignature(Imports.INCLUDED));
 		properties.addAll(ont.getAnnotationPropertiesInSignature(Imports.INCLUDED));
-		for(IRI iri : OWLRDFVocabulary.BUILT_IN_ANNOTATION_PROPERTY_IRIS){
+		for(IRI iri : OWLRDFVocabulary.asIRISet(RDFS_LABEL, RDFS_COMMENT, RDFS_SEE_ALSO, RDFS_IS_DEFINED_BY)){
 			properties.add(df.getOWLAnnotationProperty(iri));
 		}
 		

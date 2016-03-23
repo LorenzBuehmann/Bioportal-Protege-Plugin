@@ -327,8 +327,8 @@ public class SearchPanel extends JPanel {
 		new ConceptDetailsDialog(searchBean);
 	}
 	
-	private void showOntologyDetailsDialog(SearchBean searchBean) {
-		new OntologyDetailsDialog(searchBean);
+	private void showOntologyDetailsDialog(Entity entity) {
+		new OntologyDetailsDialog(entity);
 	}
 	
 	private void extractChildren(SearchBean searchBean){

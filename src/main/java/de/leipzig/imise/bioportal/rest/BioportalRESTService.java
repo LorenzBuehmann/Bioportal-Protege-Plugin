@@ -412,7 +412,7 @@ public class BioportalRESTService {
 		Set<Entity> entities = new HashSet<>();
 
 		DefaultMutableTreeNode tree = new DefaultMutableTreeNode();
-		tree.setUserObject("ROOT");
+		tree.setUserObject(Entity.TOP_ENTITY);
 
 		ArrayNode rootNode = (ArrayNode) jsonToNode(get(entity.getEntityLinks().getTree()));
 

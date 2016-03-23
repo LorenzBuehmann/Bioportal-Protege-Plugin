@@ -9,6 +9,7 @@ import javax.swing.JScrollPane;
 import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
 
+import de.leipzig.imise.bioportal.rest.Ontology;
 import org.ncbo.stanford.bean.search.SearchBean;
 import org.protege.editor.core.ui.util.NativeBrowserLauncher;
 
@@ -17,7 +18,7 @@ import de.leipzig.imise.bioportal.BioportalRESTServices;
 
 public class OntologyDetailsDialog extends DetailsDialog {
 	
-	public OntologyDetailsDialog(SearchBean searchBean){
+	public OntologyDetailsDialog(Ontology ontology){
 
 		StringBuffer buffer = new StringBuffer();
 		buffer.append("<html><body>");
@@ -29,22 +30,16 @@ public class OntologyDetailsDialog extends DetailsDialog {
 		String oddColor = "#F4F2F3";
 		String evenColor = "#E6E6E5";
 
-		de.leipzig.imise.bioportal.bean.ontology.OntologyBean cb = BioportalRESTServices.getOntologyProperties(searchBean.getOntologyId());
-		if (cb == null) {
-			detailsPane.setText("<html><body><i>No search results.</i></body></html>");
-			return;
-		}
-		
-		
-		String label = cb.getDisplayLabel();
+
+		String label = ontology.getName();
 		
 		buffer.append(getDetailsProperty("Ontology Name", label, evenColor));
-		buffer.append(getDetailsProperty("Ontology ID", cb.getOntologyId().toString(), oddColor));
-		buffer.append(getDetailsProperty("Format", cb.getFormat(), evenColor));
-		buffer.append(getDetailsProperty("Categories", cb.getCategoryIds().isEmpty() ? "not assigned" : cb.getCategoryIds().toString(), oddColor));
+		buffer.append(getDetailsProperty("Ontology ID", ontology.getId(), oddColor));
+		buffer.append(getDetailsProperty("Acronym", ontology.getAcronym(), evenColor));
+		buffer.append(getDetailsProperty("Categories", ontology.get.getCategoryIds().isEmpty() ? "not assigned" : cb.getCategoryIds().toString(), oddColor));
 		buffer.append(getDetailsProperty("Groups", cb.getGroupIds().isEmpty() ? "not assigned" : cb.getGroupIds().toString(), evenColor));
-		buffer.append(getDetailsProperty("Contact", cb.getContactName(), oddColor));
-		buffer.append(getDetailsProperty("Home Page", cb.getHomepage(), evenColor));
+		buffer.append(getDetailsProperty("Contact", ontology.getAdministeredBy().toString(), oddColor));
+		buffer.append(getDetailsProperty("Home Page", ontology., evenColor));
 		buffer.append(getDetailsProperty("Publications Page", cb.getPublication(), oddColor));
 		buffer.append(getDetailsProperty("Documentation Page", cb.getDocumentation(), evenColor));
 		buffer.append(getDetailsProperty("Description", cb.getDescription(), oddColor));

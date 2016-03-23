@@ -1,7 +1,5 @@
 package de.leipzig.imise.bioportal.ui;
 
-import de.leipzig.imise.bioportal.BioportalRESTServices;
-import de.leipzig.imise.bioportal.bean.concept.ClassBean;
 import de.leipzig.imise.bioportal.rest.BioportalRESTService;
 import de.leipzig.imise.bioportal.rest.Entity;
 import org.ncbo.stanford.bean.search.SearchBean;
@@ -23,6 +21,11 @@ import java.awt.event.ActionListener;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
+import static java.awt.GraphicsDevice.WindowTranslucency.TRANSLUCENT;
 
 public class ImportDialog extends JDialog {
 
@@ -55,19 +58,13 @@ public class ImportDialog extends JDialog {
 
 
 		// the class tree on the left
-		classTree = new JTree();
+		classTree = new JTree(new DefaultMutableTreeNode());
 //		classTree.setPreferredSize(new Dimension(200, 0));
 		classTree.setRootVisible(false);
 		classTree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
 		JScrollPane treeScrollPane = new JScrollPane(classTree);
 		treeScrollPane.setPreferredSize(new Dimension(200, 0));
 		add(new JLayer<JComponent>(treeScrollPane, layerUI), BorderLayout.WEST);
-
-		// populate the tree
-		ClassTreeLoadingTask task = new ClassTreeLoadingTask(entity);
-		ProtegeApplication.getBackgroundTaskManager().startTask(task);
-		layerUI.start();
-		task.execute();
 
 		// the details panel in the right
 		detailsPanel = new DetailsPanel(editorKit);
@@ -85,6 +82,12 @@ public class ImportDialog extends JDialog {
 		JPanel southPanel = new JPanel(new BorderLayout());
 		southPanel.add(importButton, BorderLayout.EAST);
 		add(southPanel, BorderLayout.SOUTH);
+
+		// populate the tree
+		ClassTreeLoadingTask task = new ClassTreeLoadingTask(entity);
+		ProtegeApplication.getBackgroundTaskManager().startTask(task);
+		layerUI.start();
+		task.execute();
 	}
 
 	private JTree createClassTree(Entity entity, DefaultMutableTreeNode root) {
@@ -114,9 +117,6 @@ public class ImportDialog extends JDialog {
 		// select the entity node
 		DefaultMutableTreeNode entityNode = JTreeUtils.searchNode((DefaultMutableTreeNode) classTree.getModel().getRoot(), entity);
 		TreePath path = new TreePath(((DefaultTreeModel) classTree.getModel()).getPathToRoot(entityNode));
-		classTree.setExpandsSelectedPaths(true);
-		classTree.setSelectionPath(path);
-		classTree.scrollPathToVisible(path);
 
 		// set cell renderer to display entity label
 		classTree.setCellRenderer(new EntityTreeCellRenderer());
@@ -197,6 +197,11 @@ public class ImportDialog extends JDialog {
 //				return c;
 //			}
 //		});
+
+		classTree.setExpandsSelectedPaths(true);
+		classTree.setSelectionPath(path);
+		classTree.scrollPathToVisible(path);
+
 		return classTree;
 	}
 
@@ -209,44 +214,109 @@ public class ImportDialog extends JDialog {
 	}
 	
 	private void onImportClasses() {
+		// Determine if the GraphicsDevice supports translucency.
+		GraphicsEnvironment ge =
+				GraphicsEnvironment.getLocalGraphicsEnvironment();
+		GraphicsDevice gd = ge.getDefaultScreenDevice();
+
+		//If translucent windows aren't supported, exit.
+		if (gd.isWindowTranslucencySupported(TRANSLUCENT)) {
+			final JDialog d = new JDialog(this);
+			d.setUndecorated(true);
+			d.setOpacity(0.7f);
+			d.add(new JLabel("<html>Axioms successfully added.</html>"));
+//			d.setModal(true);
+			d.setPreferredSize(new Dimension(200, 200));
+			d.pack();
+			d.setAlwaysOnTop(true);
+			d.setLocationRelativeTo(this);
+
+			Dimension scrSize = this.getSize();//Toolkit.getDefaultToolkit().getScreenSize();
+			Insets toolHeight = d.getInsets();//Toolkit.getDefaultToolkit().getScreenInsets(d.getGraphicsConfiguration());
+			d.setLocation(scrSize.width - d.getWidth(), scrSize.height - toolHeight.bottom - d.getHeight());
+
+			ScheduledExecutorService s = Executors.newSingleThreadScheduledExecutor();
+			s.schedule(new Runnable() {
+				public void run() {
+					SwingUtilities.invokeLater(new Runnable() {
+						@Override
+						public void run() {
+							d.setVisible(false);
+							d.dispose();
+						}
+					});
+				}
+			}, 3, TimeUnit.SECONDS);
+
+			d.setVisible(true);
+		}
+
+
 //		Set<Object> selectedValues = detailsPanel.getSelectedValues();
 		TreePath[] selection = classTree.getSelectionPaths();
 		if (selection == null) {
 
 		} else {
-			OWLClass superClass = editorKit.getOWLWorkspace().getOWLSelectionModel().getLastSelectedClass();
 			OWLOntologyManager ontMan = editorKit.getOWLModelManager().getOWLOntologyManager();
 			OWLDataFactory dataFactory = ontMan.getOWLDataFactory();
 			OWLOntology ontology = editorKit.getOWLModelManager().getActiveOntology();
+
+			Set<OWLAxiom> axioms2Add = new HashSet<>();
+
+			// get the selected class in Protege -> this will be the super class
+			OWLClass superClass = editorKit.getOWLWorkspace().getOWLSelectionModel().getLastSelectedClass();
 			System.out.println(superClass);
-			for (TreePath treePath : selection) {
-				System.out.println("Path: " + treePath);
-				Object[] nodes = treePath.getPath();
-				OWLClass sup = convert((Entity) ((DefaultMutableTreeNode) nodes[0]).getUserObject());
-				OWLAxiom axiom = dataFactory.getOWLSubClassOfAxiom(sup, superClass);
-				ontMan.addAxiom(ontology, axiom);
-				for (int i = 1; i < nodes.length; i++) {
-					Object node = nodes[i];
-					OWLClass sub = convert((Entity) ((DefaultMutableTreeNode) node).getUserObject());
-					System.out.println("Node: " + node);
-					axiom = dataFactory.getOWLSubClassOfAxiom(sub, sup);
-					ontMan.addAxiom(ontology, axiom);
-					sup = sub;
-				}
-			}
+
+			// convert the selected entity in the tree ->A will be the subclass
+			Entity selectedEntity = (Entity) ((DefaultMutableTreeNode) classTree.getLastSelectedPathComponent()).getUserObject();
+			OWLClass subClass = convert(selectedEntity);
+
+			// get axioms for the selected metadata
+			Set<OWLAxiom> metaDataAxioms = getMetaData(selectedEntity);
+			axioms2Add.addAll(metaDataAxioms);
+
+			// create and add the subclass axiom
+			OWLAxiom axiom = dataFactory.getOWLSubClassOfAxiom(subClass, superClass);
+			axioms2Add.add(axiom);
+
+			// add the axioms
+			ontMan.addAxioms(ontology, axioms2Add);
+			System.out.println("Adding axioms:" + axioms2Add);
+
+//			for (TreePath treePath : selection) {
+//				System.out.println("Path: " + treePath);
+//				Object[] nodes = treePath.getPath();
+//
+//				// convert the selected entity in the tree
+//				OWLClass sup = convert((Entity) ((DefaultMutableTreeNode) nodes[0]).getUserObject());
+//
+//				// create and add the subclass axiom
+//				OWLAxiom axiom = dataFactory.getOWLSubClassOfAxiom(sup, superClass);
+//				ontMan.addAxiom(ontology, axiom);
+//
+//				for (int i = 1; i < nodes.length; i++) {
+//					Object node = nodes[i];
+//					OWLClass sub = convert((Entity) ((DefaultMutableTreeNode) node).getUserObject());
+//					System.out.println("Node: " + node);
+//					axiom = dataFactory.getOWLSubClassOfAxiom(sub, sup);
+//					ontMan.addAxiom(ontology, axiom);
+//					sup = sub;
+//				}
+//			}
 		}
 	}
 
 	private OWLClass convert(Entity entity) {
 		OWLDataFactory dataFactory = editorKit.getOWLModelManager().getOWLOntologyManager().getOWLDataFactory();
 		OWLClass cls = dataFactory.getOWLClass(IRI.create(entity.getId()));
-		addMetaData(entity);
 		return cls;
 	}
 
-	private void addMetaData(Entity entity) {
+	private Set<OWLAxiom> getMetaData(Entity entity) {
+		Set<OWLAxiom> axioms = new HashSet<>();
+
 		OWLDataFactory dataFactory = editorKit.getOWLModelManager().getOWLOntologyManager().getOWLDataFactory();
-		
+
 		OWLClass cls = dataFactory.getOWLClass(IRI.create(entity.getId()));
 		
 		OWLOntology ontology = editorKit.getOWLModelManager().getActiveOntology();
@@ -265,13 +335,14 @@ public class ImportDialog extends JDialog {
 
 				ax = dataFactory.getOWLAnnotationAssertionAxiom(cls.getIRI(), anno);
 
-				editorKit.getOWLModelManager().getOWLOntologyManager().addAxiom(ontology, ax);
+				axioms.add(ax);
 			} else if(property.isOWLDataProperty()) {
 
 			} else {
 
 			}
 		}
+		return axioms;
 	}
 
 	class ExpandTreeWorker extends SwingWorker<Collection<Entity>, Void> implements BackgroundTask {
@@ -323,36 +394,6 @@ public class ImportDialog extends JDialog {
 
 	}
 	
-	class LoadPropertiesWorker extends SwingWorker<Void, Void> implements BackgroundTask {
-
-		private DefaultMutableTreeNode nodeToExpand;
-		private int ontologyVersionId;
-
-		public LoadPropertiesWorker(DefaultMutableTreeNode nodeToExpand, int ontologyVersionId) {
-			this.nodeToExpand = nodeToExpand;
-			this.ontologyVersionId = ontologyVersionId;
-		}
-
-		@Override
-		protected Void doInBackground() throws Exception {
-			ClassBean cb = BioportalRESTServices.getConceptProperties(ontologyVersionId, ((ClassBean)nodeToExpand.getUserObject()).getId());
-			Collection<ClassBean> children = (Collection<ClassBean>) cb.getRelations().get(ClassBean.SUB_CLASS_PROPERTY);
-			if(children == null){
-				cb.getRelations().put(ClassBean.SUB_CLASS_PROPERTY, Collections.<ClassBean>emptySet());
-			}
-			nodeToExpand.setUserObject(cb);
-			return null;
-		}
-
-		@Override
-		protected void done() {
-			ProtegeApplication.getBackgroundTaskManager().endTask(this);
-			editorKit.getWorkspace().setCursor(Cursor.getDefaultCursor());
-			onShowDetails((Entity) nodeToExpand.getUserObject());
-		}
-
-	}
-
 	class ClassTreeLoadingTask extends SwingWorker<DefaultMutableTreeNode, Void> implements BackgroundTask {
 
 		Entity entity;
