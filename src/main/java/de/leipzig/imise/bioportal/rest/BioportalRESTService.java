@@ -9,13 +9,8 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.Sets;
 import com.google.common.hash.HashCode;
 import com.google.common.hash.HashFunction;
-import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
 import com.google.common.io.Files;
-import de.leipzig.imise.bioportal.bean.concept.ClassBean;
-import de.leipzig.imise.bioportal.util.BioportalConcept;
-import de.leipzig.imise.bioportal.util.BioportalOntology;
-import de.leipzig.imise.bioportal.util.PrivateOntologyException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -366,15 +361,31 @@ public class BioportalRESTService {
 
 		return rootPage;
 	}
-	
-	public static de.leipzig.imise.bioportal.bean.ontology.OntologyBean getOntologyProperties(int ontologyId){
-		BioportalOntology c = new BioportalOntology();
-		return c.getOntologyProperties(getOntologyPropertiesURL(ontologyId));
+
+	public static Ontology getOntology(Entity entity) {
+		JsonNode node = jsonToNode(get(entity.getEntityLinks().getOntology()));
+
+		try {
+			Ontology ontology = mapper.readValue(node.toString(), Ontology.class);
+			return ontology;
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		return null;
 	}
-	
-	public static ClassBean getConceptProperties(int ontologyVersionId, String conceptId) throws PrivateOntologyException{
-		BioportalConcept c = new BioportalConcept();
-		return c.getConceptProperties(getConceptPropertiesURL(ontologyVersionId, conceptId));
+
+	public static OntologySubmission getOntologySubmission(Ontology ontology) {
+		JsonNode node = jsonToNode(get(ontology.getLinks().getLatestSubmission()));
+
+		try {
+			OntologySubmission ontologySubmission = mapper.readValue(node.toString(), OntologySubmission.class);
+			return ontologySubmission;
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		return null;
 	}
 
 	public static Entity getEntityDetails(Entity entity) {

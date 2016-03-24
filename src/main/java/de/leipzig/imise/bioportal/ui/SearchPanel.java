@@ -284,7 +284,7 @@ public class SearchPanel extends JPanel {
 							createLazyClassHierarchyTree(searchResultTable.getSearchBean(row));
 						break;
 						case 2:
-//							showOntologyDetailsDialog(searchResultTable.getSearchBean(row));
+							showOntologyDetailsDialog(searchResultTable.getSearchBean(row));
 							break;//NativeBrowserLauncher.openURL(getShowOntologyInBPString(searchResultTable.getSearchBean(row)));break;
 						case 4:
 							showConceptDetailsDialog(searchResultTable.getSearchBean(row));
@@ -328,7 +328,7 @@ public class SearchPanel extends JPanel {
 	}
 	
 	private void showOntologyDetailsDialog(Entity entity) {
-		new OntologyDetailsDialog(entity);
+		new OntologyDetailsDialog(BioportalRESTService.getOntology(entity));
 	}
 	
 	private void extractChildren(SearchBean searchBean){
