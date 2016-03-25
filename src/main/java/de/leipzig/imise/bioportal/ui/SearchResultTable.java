@@ -1,33 +1,61 @@
 package de.leipzig.imise.bioportal.ui;
 
-import java.awt.Cursor;
+import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.util.List;
 
 import de.leipzig.imise.bioportal.rest.Entity;
 import org.jdesktop.swingx.JXTable;
 import org.jdesktop.swingx.decorator.HighlighterFactory;
-import org.ncbo.stanford.bean.search.SearchBean;
+
+import javax.swing.*;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.TableCellRenderer;
 
 public class SearchResultTable extends JXTable {
 	
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = -7673941614799822286L;
+	private String searchTerm;
 
 	public SearchResultTable(){
 		super(new SearchResultTableModel());
 		addHighlighter(HighlighterFactory.createAlternateStriping());
 		getColumn(4).setMaxWidth(30);
 //		getColumn(5).setMaxWidth(30);
+
+		// renderer to highlight the search term in the entity label
+		getColumn(0).setCellRenderer(new DefaultTableCellRenderer() {
+
+			@Override
+			public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
+														   boolean hasFocus,
+														   int row, int column) {
+				Component c =  super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+				if(column == 0) {
+					JLabel label = (JLabel) c;
+					label.setText("<html>" + label.getText().replaceAll("(?i)" + searchTerm, "<b>" + searchTerm + "</b>") + "</html>");
+				}
+				return c;
+			}
+		});
 	}
-	
-	public void setSearchResults(List<Entity> searchResults){
+
+	/**
+	 * Set the entities found for the given search term.
+	 * @param searchTerm the search term
+	 * @param searchResults the entities
+	 */
+	public void setSearchResults(String searchTerm, List<Entity> searchResults){
+		this.searchTerm = searchTerm;
 		((SearchResultTableModel)getModel()).setSearchResults(searchResults);
 	}
-	
-	public Entity getSearchBean(int row){
+
+	/**
+	 * Get the entity for the given row.
+	 * @param row the row
+	 * @return the entity
+	 */
+	public Entity getEntity(int row){
 		return ((SearchResultTableModel)getModel()).getSearchBean(row);
 	}
 	
@@ -39,10 +67,10 @@ public class SearchResultTable extends JXTable {
         int colIndex = columnAtPoint(p);
         int realColumnIndex = convertColumnIndexToModel(colIndex);
         if(rowIndex >= 0){
-			Entity searchBean = getSearchBean(rowIndex);
+			Entity searchBean = getEntity(rowIndex);
 	        
 	        switch(realColumnIndex){
-				case 0: tip = searchBean.getEntityLinks().getUi() + " (click to view in Bioportal)"; break;
+				case 0: tip = searchBean.getEntityLinks().getUi() + " (click to view in BioPortal)"; break;
 				case 1: tip = searchBean.getPrefLabel(); break;
 				case 2: tip = searchBean.getEntityLinks().getOntology() + " (click to see ontology details)"; break;
 				case 3: tip = "Found term " + searchBean.getId() + " in " + getValueAt(rowIndex, realColumnIndex); break;
@@ -64,5 +92,4 @@ public class SearchResultTable extends JXTable {
 		}
 		super.processMouseMotionEvent(e);
 	}
-
 }

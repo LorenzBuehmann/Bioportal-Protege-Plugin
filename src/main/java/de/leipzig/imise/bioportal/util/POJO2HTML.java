@@ -1,13 +1,16 @@
 package de.leipzig.imise.bioportal.util;
 
 import com.google.common.base.Joiner;
+import de.leipzig.imise.bioportal.rest.BioportalRESTService;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
+import org.apache.http.client.utils.URIBuilder;
 
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -25,9 +28,10 @@ public class POJO2HTML {
 		public HTMLStyle() {
 			setFieldSeparator("</td></tr>" + SystemUtils.LINE_SEPARATOR + "<tr><td style='font-weight: bold;'>");
 
-			setContentStart("<table>" + SystemUtils.LINE_SEPARATOR +
+			setContentStart("<table id=\"customers\">" + SystemUtils.LINE_SEPARATOR +
 //									"<thead><tr><th>Field</th><th>Data</th></tr></thead>" +
-									"<tbody><tr><td style='font-weight: bold;'>");
+									"<tbody>" + SystemUtils.LINE_SEPARATOR +
+									"<tr><td style='font-weight: bold;'>");
 
 			setFieldNameValueSeparator("</td><td>");
 
@@ -52,7 +56,7 @@ public class POJO2HTML {
 						super.append(buffer, entry.getKey(), makeLink(entry.getValue()), fullDetail);
 					}
 				} else {
-					super.append(buffer, fieldName, makeLink(value), fullDetail);
+					super.append(buffer, fieldName, (value == null) ? value : makeLink(value), fullDetail);
 				}
 
 			}
@@ -60,7 +64,7 @@ public class POJO2HTML {
 
 		private Object makeLink(Object value) {
 			if(value.toString().startsWith("http://")) {
-				return "<a href='" + value + "'>" + value + "</a>";
+				return "<a href='" + BioportalRESTService.asBioportalLink(value.toString()) + "'>" + value + "</a>";
 			}
 			return value;
 		}
@@ -71,8 +75,32 @@ public class POJO2HTML {
 				super.appendDetail(buffer, fieldName, value);
 			} else {
 				if(!isMetaDataField(fieldName)) {
-					buffer.append(ReflectionToStringBuilder.toString(makeLink(value), this));
+					if(value instanceof Collection) {
+						Iterator iterator = ((Collection) value).iterator();
+						while(iterator.hasNext()) {
+							buffer.append(ReflectionToStringBuilder.toString(iterator.next(), this));
+						}
+					} else {
+						buffer.append(ReflectionToStringBuilder.toString(makeLink(value), this));
+					}
 				}
+			}
+		}
+
+		@Override
+		protected void appendDetail(final StringBuffer buffer, final String fieldName, final Collection<?> coll) {
+			Iterator<?> iterator = coll.iterator();
+
+//			// first value inline with field name
+//			buffer.append(makeLink(iterator.next()));
+//
+//			while(iterator.hasNext()) {
+//				buffer.append("</td></tr>" + SystemUtils.LINE_SEPARATOR);
+//				buffer.append("<tr><td></td><td>" + makeLink(iterator.next()));
+//			}
+
+			while(iterator.hasNext()) {
+				appendDetail(buffer, fieldName, makeLink(iterator.next()));
 			}
 		}
 

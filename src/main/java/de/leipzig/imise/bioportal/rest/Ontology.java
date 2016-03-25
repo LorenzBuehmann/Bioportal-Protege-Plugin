@@ -43,6 +43,11 @@ public class Ontology {
     private String Type;
     @JsonProperty("links")
     private OntologyLinks links;
+    @JsonProperty("group")
+    private List<String> groups = new ArrayList<String>();
+    @JsonProperty("hasDomain")
+    private List<String> categories = new ArrayList<String>();
+
     @JsonIgnore
     private Map<String, Object> additionalProperties = new HashMap<String, Object>();
 
@@ -204,6 +209,46 @@ public class Ontology {
     @JsonProperty("links")
     public void setLinks(OntologyLinks links) {
         this.links = links;
+    }
+
+    /**
+     *
+     * @return
+     *     The group
+     */
+    @JsonProperty("group")
+    public List<String> getGroups() {
+        return groups;
+    }
+
+    /**
+     *
+     * @param group
+     *     The group
+     */
+    @JsonProperty("group")
+    public void setGroups(List<String> groups) {
+        this.groups = groups;
+    }
+
+    /**
+     *
+     * @return
+     *     The hasDomain
+     */
+    @JsonProperty("hasDomain")
+    public List<String> getCategories() {
+        return categories;
+    }
+
+    /**
+     *
+     * @param hasDomain
+     *     The hasDomain
+     */
+    @JsonProperty("hasDomain")
+    public void setCategories(List<String> categories) {
+        this.categories = categories;
     }
 
     @JsonAnyGetter

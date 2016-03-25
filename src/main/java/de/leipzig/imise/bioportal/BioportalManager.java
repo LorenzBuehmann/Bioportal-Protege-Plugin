@@ -63,27 +63,28 @@ public class BioportalManager {
         return Collections.unmodifiableSet(selectedOntologies);
     }
 	
-	public List<SearchBean> getSearchResults(String searchTerm, List<Integer> ontologyIds, boolean isExactMatch, boolean includeProperties){
+	public List<SearchBean> getSearchResults(String searchTerm, List<Ontology> ontologies, boolean isExactMatch, boolean includeProperties){
 		List<String> ontIds = new ArrayList<>();
-		for(Ontology bean : selectedOntologies){
-			ontIds.add(bean.getId());
+		for(Ontology ontology : ontologies){
+			ontIds.add(ontology.getAcronym());
 		}
 		return searchCache.getSearchResults(searchTerm, ontIds, isExactMatch, includeProperties);
 //		return searchCache.getSearchResults(searchTerm, ontologyIds, isExactMatch, includeProperties);
 	}
 	
-	public Page getSearchClassesResults(String searchTerm, List<String> ontologyIds, boolean isExactMatch, boolean includeProperties){
+	public Page getSearchClassesResults(String searchTerm, List<Ontology> ontologies, boolean isExactMatch,
+										boolean includeProperties){
 		List<String> ontIds = new ArrayList<>();
-		for(Ontology bean : selectedOntologies){
-			ontIds.add(bean.getId());
+		for(Ontology ontology : ontologies){
+			ontIds.add(ontology.getAcronym());
 		}
-		return BioportalRESTService.getSearchResult(searchTerm, ontologyIds, isExactMatch, includeProperties);
+		return BioportalRESTService.getSearchResult(searchTerm, ontIds, isExactMatch, includeProperties);
 	}
 	
-	public List<SearchBean> getSearchPropertiesResults(String searchTerm, List<Integer> ontologyIds, boolean isExactMatch, boolean includeProperties){
+	public List<SearchBean> getSearchPropertiesResults(String searchTerm, List<Ontology> ontologies, boolean isExactMatch, boolean includeProperties){
 		List<String> ontIds = new ArrayList<>();
-		for(Ontology bean : selectedOntologies){
-			ontIds.add(bean.getId());
+		for(Ontology ontology : ontologies){
+			ontIds.add(ontology.getAcronym());
 		}
 		return searchCache.getSearchPropertiesResults(searchTerm, ontIds, isExactMatch, includeProperties);
 	}

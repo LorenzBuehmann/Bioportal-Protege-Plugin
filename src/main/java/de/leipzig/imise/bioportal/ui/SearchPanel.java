@@ -2,29 +2,19 @@ package de.leipzig.imise.bioportal.ui;
 
 import de.leipzig.imise.bioportal.BioportalConstants;
 import de.leipzig.imise.bioportal.BioportalManager;
-import de.leipzig.imise.bioportal.bean.category.CategoryBean;
-import de.leipzig.imise.bioportal.bean.group.GroupBean;
 import de.leipzig.imise.bioportal.rest.*;
 import org.apache.log4j.Logger;
-import org.eclipse.core.runtime.IExtensionRegistry;
 import org.ncbo.stanford.bean.search.SearchBean;
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.FrameworkUtil;
 import org.protege.editor.core.ProtegeApplication;
-import org.protege.editor.core.editorkit.EditorKit;
-import org.protege.editor.core.plugin.PluginUtilities;
 import org.protege.editor.core.ui.progress.BackgroundTask;
 import org.protege.editor.core.ui.util.CheckTable;
 import org.protege.editor.core.ui.util.CheckTableModel;
 import org.protege.editor.owl.OWLEditorKit;
 import org.protege.editor.owl.OWLEditorKitFactory;
-import org.protege.editor.owl.ProtegeOWL;
 import org.protege.editor.owl.model.OWLModelManager;
-import org.protege.editor.owl.model.OWLModelManagerImpl;
 import org.protege.editor.owl.model.SaveErrorHandler;
-import org.protege.editor.owl.model.search.SearchManagerSelector;
 import org.protege.editor.owl.ui.error.OntologyLoadErrorHandlerUI;
-import org.protege.editor.owl.ui.explanation.ExplanationManager;
 import org.protege.editor.owl.ui.list.OWLAxiomList;
 import org.protege.editor.owl.ui.ontology.imports.missing.MissingImportHandlerUI;
 import org.semanticweb.owlapi.apibinding.OWLManager;
@@ -33,7 +23,6 @@ import org.semanticweb.owlapi.io.OWLParser;
 import org.semanticweb.owlapi.io.OWLParserException;
 import org.semanticweb.owlapi.io.UnparsableOntologyException;
 import org.semanticweb.owlapi.model.*;
-import org.semanticweb.owlapi.util.VersionInfo;
 import uk.ac.manchester.cs.owlapi.modularity.ModuleType;
 import uk.ac.manchester.cs.owlapi.modularity.SyntacticLocalityModuleExtractor;
 
@@ -115,7 +104,7 @@ public class SearchPanel extends JPanel {
 		
 
 		////////////////////////////////////////////////////////////////////////////////////
-		// the search options panel
+		// the onSearch options panel
 		//
 		
 		JPanel searchFieldPanel = new JPanel();
@@ -149,18 +138,19 @@ public class SearchPanel extends JPanel {
 		c.weightx = 0.0;
 		c.gridwidth = GridBagConstraints.REMAINDER;
 		searchFieldPanel.add(searchButton, c);
-		searchButton.addActionListener(new ActionListener() {
 
+		searchButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				search();
+				onSearch();
 			}
 		});
+
 		searchField.addKeyListener(new KeyAdapter() {
 			@Override
 			public void keyPressed(KeyEvent e) {
 				if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-					search();
+					onSearch();
 				}
 			}
 		});
@@ -251,7 +241,7 @@ public class SearchPanel extends JPanel {
 		
 		
 		///////////////////////////////////////////////////////////////////////////////////////
-		// the search result panel
+		// the onSearch result panel
 		//
 		searchResultTable = new SearchResultTable();
 		searchResultTable.addMouseMotionListener(new MouseAdapter() {
@@ -281,13 +271,13 @@ public class SearchPanel extends JPanel {
 //						} catch (UnsupportedEncodingException e2) {
 //							e2.printStackTrace();
 //						}
-							createLazyClassHierarchyTree(searchResultTable.getSearchBean(row));
+							createLazyClassHierarchyTree(searchResultTable.getEntity(row));
 						break;
 						case 2:
-							showOntologyDetailsDialog(searchResultTable.getSearchBean(row));
+							showOntologyDetailsDialog(searchResultTable.getEntity(row));
 							break;//NativeBrowserLauncher.openURL(getShowOntologyInBPString(searchResultTable.getSearchBean(row)));break;
 						case 4:
-							showConceptDetailsDialog(searchResultTable.getSearchBean(row));
+							showConceptDetailsDialog(searchResultTable.getEntity(row));
 							break;
 						case 5:
 //							showModuleAxiomsDialog(searchResultTable.getSearchBean(row));
@@ -308,9 +298,12 @@ public class SearchPanel extends JPanel {
 		validateSearchButton();
 	}
 
-	private void search() {
-		SearchTask searchTask = new SearchTask(searchField.getText(), Collections.emptyList(),
-				exactMatchRadioButton.isSelected(), searchInAttributesBox.isSelected());
+	private void onSearch() {
+		SearchTask searchTask = new SearchTask(
+				searchField.getText(),
+				ontologiesTable1.getFilteredValues(),
+				exactMatchRadioButton.isSelected(),
+				searchInAttributesBox.isSelected());
 		ProtegeApplication.getBackgroundTaskManager().startTask(searchTask);
 //		editorKit.getWorkspace().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 		searchButton.setEnabled(false);
@@ -600,16 +593,16 @@ public class SearchPanel extends JPanel {
 
 
 	}
-	
-	private void updateOntologiesList(){
-		Category categoryBean = (Category)categoriesBox.getSelectedItem();
-		Group groupBean = (Group)groupsBox.getSelectedItem();
+
+	private void updateOntologiesList() {
+		Category category = (Category) categoriesBox.getSelectedItem();
+		Group group = (Group) groupsBox.getSelectedItem();
 		List<Ontology> ontologies = new ArrayList<>();
-		for(Ontology bean : BioportalManager.getInstance().getOntologies()){
-//			if( (categoryBean.getId() == 0000 || bean.getCategoryIds().contains(categoryBean.getId()))
-//					&& (groupBean.getId() == 0000 || bean.getGroupIds().contains(groupBean.getId()))){
-//				ontologies.add(bean);
-//			}
+		for (Ontology ontology : BioportalManager.getInstance().getOntologies()) {
+			if ((category.getName().equals("ALL CATEGORIES") || ontology.getCategories().contains(category.getId()))
+					&& (group.getName().equals("ALL GROUPS") || ontology.getGroups().contains(group.getId()))) {
+				ontologies.add(ontology);
+			}
 		}
 		Collections.sort(ontologies, new Comparator<Ontology>() {
 			@Override
@@ -617,27 +610,29 @@ public class SearchPanel extends JPanel {
 				return o1.getName().compareTo(o2.getName());
 			}
 		});
-		ontologiesTable.setOntologies(ontologies);
+		CheckTableModel<Ontology> model = ontologiesTable1.getModel();
+		model.setData(ontologies, false);
+//		ontologiesTable.setOntologies(ontologies);
 	}
 	
 	class SearchTask extends SwingWorker<Page, Void> implements BackgroundTask{
 
 		
 		private String searchTerm;
-		private List<String> ontologyIds;
+		private List<Ontology> ontologies;
 		private boolean isExactMatch;
 		private boolean includeProperties;
 		
-		public SearchTask(String searchTerm, List<String> ontologyIds, boolean isExactMatch, boolean includeProperties){
+		public SearchTask(String searchTerm, List<Ontology> ontologies, boolean isExactMatch, boolean includeProperties){
 			this.searchTerm = searchTerm;
-			this.ontologyIds = ontologyIds;
+			this.ontologies = ontologies;
 			this.isExactMatch = isExactMatch;
 			this.includeProperties = includeProperties;
 		}
 
 		@Override
 		protected Page doInBackground() throws Exception {
-			return BioportalManager.getInstance().getSearchClassesResults(searchTerm, ontologyIds, isExactMatch, includeProperties);
+			return BioportalManager.getInstance().getSearchClassesResults(searchTerm, ontologies, isExactMatch, includeProperties);
 		}
 		
 		@Override
@@ -648,7 +643,7 @@ public class SearchPanel extends JPanel {
 			Page result;
 			try {
 				result = get();
-				searchResultTable.setSearchResults(result.getEntities());
+				searchResultTable.setSearchResults(searchTerm, result.getEntities());
 //				editorKit.getWorkspace().setCursor(Cursor.getDefaultCursor());
 			} catch (InterruptedException e) {
 				e.printStackTrace();

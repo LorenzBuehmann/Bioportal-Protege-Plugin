@@ -26,6 +26,10 @@ public abstract class DetailsDialog extends JDialog {
 		// ((HTMLDocument)editorPane.getDocument()).getStyleSheet().addRule(TableCss.CSS);
 		detailsPane.setBorder(BorderUIResource.getEtchedBorderUIResource());
 	}
+
+	protected String asHTMLLink(String url, String text) {
+		return "<a href='" + url + "'>" + text + "</a>";
+	}
 	
 	protected String getDetailsProperty(String name, String value, String color){
 		StringBuffer buffer = new StringBuffer();

@@ -11,6 +11,7 @@ import com.google.common.hash.HashCode;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.google.common.io.Files;
+import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +38,7 @@ public class BioportalRESTService {
 	public static final String SUFFIX_SEARCH = "search/";
 	public static final String SUFFIX_CATEGORIES = "categories/";
 	public static final String SUFFIX_GROUPS = "groups/";
-	public static final String SEARCH_PROPERTY_ONTOLOGY_IDS = "ontologyids=";
+	public static final String SEARCH_PROPERTY_ONTOLOGY_IDS = "ontologies=";
 	public static final String SEARCH_PROPERTY_EXACT_MATCH = "isexactmatch";
 	public static final String SEARCH_PROPERTY_INCLUDE_PROPERTIES = "includeproperties";
 	public static final String SEARCH_PROPERTY_OBJECT_TYPES = "objecttypes";
@@ -82,8 +83,15 @@ public class BioportalRESTService {
 			Map.Entry<String, JsonNode> entry = it.next();
 			serviceLinks.put(entry.getKey(), entry.getValue().asText());
 		}
+	}
 
-
+	/**
+	 * Adds API key param to url.
+	 * @param url the URL
+	 * @return the enriched URL
+	 */
+	public static String asBioportalLink(String url) {
+		return url + "?apikey=" + API_KEY;
 	}
 
 	private static String get(String urlToGet) {
@@ -203,19 +211,19 @@ public class BioportalRESTService {
 	
 	private static String getSearchTermString(String searchTerm, List<String> ontologyIds, boolean isExactMatch, boolean includeProperties){
 		StringBuffer sb = new StringBuffer("?");
-		sb.append("q=").append(searchTerm).append("&");
+
+		sb.append("q=").append(searchTerm);
+
 		if(!ontologyIds.isEmpty()){
-			sb.append(SEARCH_PROPERTY_ONTOLOGY_IDS);
-			for(String ontologyId : ontologyIds){
-				sb.append(ontologyId);
-				sb.append(",");
-			}
-			sb.append("&");
+			sb.append("&").append(SEARCH_PROPERTY_ONTOLOGY_IDS);
+			sb.append(Joiner.on(",").join(ontologyIds));
+
 		}
-		sb.append(SEARCH_PROPERTY_EXACT_MATCH);
+
+		sb.append("&").append(SEARCH_PROPERTY_EXACT_MATCH);
 		sb.append(isExactMatch ? "=1" : "=0");
-		sb.append("&");
-		sb.append(SEARCH_PROPERTY_INCLUDE_PROPERTIES);
+
+		sb.append("&").append(SEARCH_PROPERTY_INCLUDE_PROPERTIES);
 		sb.append(includeProperties ? "=1" : "=0");
 		return sb.toString();
 	}
@@ -316,7 +324,7 @@ public class BioportalRESTService {
 	 * @return all ontologies
 	 */
 	public static List<Ontology> getOntologies(){
-		String link = serviceLinks.get("ontologies");
+		String link = serviceLinks.get("ontologies") + "?include=name,acronym,group,hasDomain";
 
 		// Get the ontologies from the link we found
 		JsonNode rootNode = jsonToNode(get(link));

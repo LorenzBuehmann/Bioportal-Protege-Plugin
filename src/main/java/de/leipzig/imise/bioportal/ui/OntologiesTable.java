@@ -7,10 +7,7 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.MouseEvent;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.EventObject;
-import java.util.List;
+import java.util.*;
 
 import javax.swing.JDialog;
 import javax.swing.JFrame;
@@ -38,9 +35,6 @@ import de.leipzig.imise.bioportal.bean.ontologies.OntologyBean;
 
 public class OntologiesTable extends JXTable {
 	
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 5269788903940060647L;
 
 	public OntologiesTable(){
@@ -67,9 +61,9 @@ public class OntologiesTable extends JXTable {
 		getColumn(0).setMaxWidth(20);
 		org.jdesktop.swingx.renderer.StringValue sv = new org.jdesktop.swingx.renderer.StringValue() {
 		      public String getString(Object value) {
-		        return ((OntologyBean)value).getDisplayLabel();
+		        return ((Ontology)value).getName();
 		 }};
-		 setDefaultRenderer(OntologyBean.class, new DefaultTableRenderer(sv));
+		 setDefaultRenderer(Ontology.class, new DefaultTableRenderer(sv));
 //		getColumn(1).setCellRenderer(new DefaultTableCellRenderer(){
 //			@Override
 //			public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
@@ -123,7 +117,7 @@ public class OntologiesTable extends JXTable {
         }
         return tip;
 	}
-	
+
 	public static void main(String[] args) {
 		JFrame test = new JFrame();
 		test.setSize(800, 800);

@@ -9,6 +9,7 @@ import javax.swing.JScrollPane;
 import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
 
+import de.leipzig.imise.bioportal.rest.BioportalRESTService;
 import de.leipzig.imise.bioportal.rest.Ontology;
 import de.leipzig.imise.bioportal.util.POJO2HTML;
 import org.ncbo.stanford.bean.search.SearchBean;
@@ -31,38 +32,10 @@ public class OntologyDetailsDialog extends DetailsDialog {
 		String oddColor = "#F4F2F3";
 		String evenColor = "#E6E6E5";
 
-		System.out.println(POJO2HTML.makeHTML(ontology));
-		buffer.append(POJO2HTML.makeHTML(ontology));
-//
-//
-//		String label = ontology.getName();
-//
-//		buffer.append(getDetailsProperty("Ontology Name", label, evenColor));
-//		buffer.append(getDetailsProperty("Ontology ID", ontology.getId(), oddColor));
-//		buffer.append(getDetailsProperty("Acronym", ontology.getAcronym(), evenColor));
-//		buffer.append(getDetailsProperty("Categories", ontology.get.getCategoryIds().isEmpty() ? "not assigned" : cb.getCategoryIds().toString(), oddColor));
-//		buffer.append(getDetailsProperty("Groups", cb.getGroupIds().isEmpty() ? "not assigned" : cb.getGroupIds().toString(), evenColor));
-//		buffer.append(getDetailsProperty("Contact", ontology.getAdministeredBy().toString(), oddColor));
-//		buffer.append(getDetailsProperty("Home Page", ontology., evenColor));
-//		buffer.append(getDetailsProperty("Publications Page", cb.getPublication(), oddColor));
-//		buffer.append(getDetailsProperty("Documentation Page", cb.getDocumentation(), evenColor));
-//		buffer.append(getDetailsProperty("Description", cb.getDescription(), oddColor));
-//		buffer.append(getDetailsProperty("Created At", new SimpleDateFormat().format(cb.getDateCreated()), oddColor));
-//		buffer.append(getDetailsProperty("Released At", new SimpleDateFormat().format(cb.getDateReleased()), oddColor));
-//		buffer.append("</table>");
-//
-//		String directLink = getShowOntologyInBPString(searchBean);
-//		if (directLink != null && directLink.length() > 0) {
-//			buffer.append("<div style=\"padding:5px;\"><br><b>Direct link in BioPortal:</b> ");
-//			buffer.append("<a href=\"");
-//			buffer.append(directLink);
-//			buffer.append("\">");
-//			buffer.append(directLink);
-//			buffer.append("</a></div>");
-//			buffer.append("<br>"); // important in order to avoid automatic
-//			// horizontal scrolling to the right end of
-//			// the page when displaying very long URLs
-//		}
+		buffer.append(POJO2HTML.makeHTML(BioportalRESTService.getOntologySubmission(ontology)));
+
+		buffer.append("<p><b>" + asHTMLLink(ontology.getLinks().getUi(), "Open ontology in Bioportal") + "</b></p>");
+
 		buffer.append("</body></html>");
 		detailsPane.setText(buffer.toString());
 		detailsPane.setPreferredSize(new Dimension(700, 500));
@@ -76,21 +49,10 @@ public class OntologyDetailsDialog extends DetailsDialog {
 		});
 
 		JDialog dialog = new JDialog();
-		dialog.setTitle("Details for " + ontology.getName());
+		dialog.setTitle("Details for " + ontology.getName() + " (" + ontology.getAcronym() + ")");
 		dialog.setModal(true);
 		dialog.add(new JScrollPane(detailsPane));
 		dialog.pack();
 		dialog.setVisible(true);
 	}
-	
-	private String getShowOntologyInBPString(SearchBean searchBean){
-		StringBuffer sb = new StringBuffer();
-		sb.append(BioportalConstants.BP_REPOSITORY_BASE_STRING);
-		sb.append(BioportalConstants.BP_ONTOLOGIES_STRING);
-		sb.append("/");
-		sb.append(searchBean.getOntologyId());
-
-		return sb.toString();
-	}
-
 }
