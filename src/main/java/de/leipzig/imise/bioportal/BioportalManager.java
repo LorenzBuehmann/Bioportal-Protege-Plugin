@@ -1,6 +1,5 @@
 package de.leipzig.imise.bioportal;
 
-import de.leipzig.imise.bioportal.bean.ontologies.OntologyBean;
 import de.leipzig.imise.bioportal.cache.SearchCache;
 import de.leipzig.imise.bioportal.rest.BioportalRESTService;
 import de.leipzig.imise.bioportal.rest.Ontology;
@@ -44,7 +43,7 @@ public class BioportalManager {
         ontologies.put(ontology, b);
     }
 	
-	public boolean isSelectedOntology(OntologyBean ontologyBean){
+	public boolean isSelectedOntology(Ontology ontologyBean){
 		ontologies.get(ontologyBean).booleanValue();
 		return selectedOntologies.contains(ontologyBean);
 	}

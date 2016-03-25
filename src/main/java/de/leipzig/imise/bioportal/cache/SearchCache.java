@@ -4,11 +4,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import org.ncbo.stanford.bean.search.SearchBean;
 
-import de.leipzig.imise.bioportal.BioportalRESTServices;
 import de.leipzig.imise.bioportal.SearchRequest;
 
 public class SearchCache {

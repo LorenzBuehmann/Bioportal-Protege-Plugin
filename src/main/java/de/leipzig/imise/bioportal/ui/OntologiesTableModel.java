@@ -1,13 +1,11 @@
 package de.leipzig.imise.bioportal.ui;
 
-import java.util.ArrayList;
-import java.util.List;
+import de.leipzig.imise.bioportal.BioportalManager;
+import de.leipzig.imise.bioportal.rest.Ontology;
 
 import javax.swing.table.AbstractTableModel;
-
-import de.leipzig.imise.bioportal.BioportalManager;
-import de.leipzig.imise.bioportal.bean.ontologies.OntologyBean;
-import de.leipzig.imise.bioportal.rest.Ontology;
+import java.util.ArrayList;
+import java.util.List;
 
 public class OntologiesTableModel extends AbstractTableModel {
 	
@@ -51,7 +49,7 @@ public class OntologiesTableModel extends AbstractTableModel {
 		if(column == 0){
 			return Boolean.class;
 		} else {
-			return OntologyBean.class;
+			return Ontology.class;
 		}
 	}
 	

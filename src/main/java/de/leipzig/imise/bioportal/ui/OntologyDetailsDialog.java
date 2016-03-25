@@ -1,8 +1,6 @@
 package de.leipzig.imise.bioportal.ui;
 
 import java.awt.Dimension;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 
 import javax.swing.JDialog;
 import javax.swing.JScrollPane;
@@ -12,11 +10,7 @@ import javax.swing.event.HyperlinkListener;
 import de.leipzig.imise.bioportal.rest.BioportalRESTService;
 import de.leipzig.imise.bioportal.rest.Ontology;
 import de.leipzig.imise.bioportal.util.POJO2HTML;
-import org.ncbo.stanford.bean.search.SearchBean;
 import org.protege.editor.core.ui.util.NativeBrowserLauncher;
-
-import de.leipzig.imise.bioportal.BioportalConstants;
-import de.leipzig.imise.bioportal.BioportalRESTServices;
 
 public class OntologyDetailsDialog extends DetailsDialog {
 	

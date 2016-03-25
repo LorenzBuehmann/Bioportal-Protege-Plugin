@@ -3,21 +3,13 @@ package de.leipzig.imise.bioportal.ui;
 import java.awt.Dimension;
 import java.util.Map;
 
-import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
 
-import de.leipzig.imise.bioportal.rest.BioportalRESTService;
 import de.leipzig.imise.bioportal.rest.Entity;
-import org.ncbo.stanford.bean.search.SearchBean;
 import org.ncbo.stanford.util.HTMLUtil;
-import org.protege.editor.core.ui.util.JOptionPaneEx;
 import org.protege.editor.core.ui.util.NativeBrowserLauncher;
-
-import de.leipzig.imise.bioportal.BioportalRESTServices;
-import de.leipzig.imise.bioportal.bean.concept.ClassBean;
-import de.leipzig.imise.bioportal.util.PrivateOntologyException;
 
 public class ConceptDetailsDialog extends DetailsDialog {
 
