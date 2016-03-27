@@ -31,34 +31,35 @@ public class BioportalViewComponent extends AbstractOWLViewComponent {
         setLayout(new BorderLayout());
         add(new SearchPanel(getOWLEditorKit()));
         ViewComponentPlugin viewPlugin = getWorkspace().getViewManager().getViewComponentPlugin("org.protege.editor.owl.OWLAssertedClassHierarchy");
-//        log.info(viewPlugin);
-//        log.info(viewPlugin.getId());
-//        log.info(viewPlugin.getLabel());
-//        String viewId = viewPlugin.getId();
-//        Workspace workspace = viewPlugin.getWorkspace();
-//		if (workspace instanceof TabbedWorkspace) {
-//			WorkspaceTab tab = ((TabbedWorkspace) workspace).getSelectedTab();
-//			if (tab instanceof WorkspaceViewsTab) {
-//				ViewsPane viewPane = ((WorkspaceViewsTab) tab).getViewsPane();
-//				for (View view : viewPane.getViews()) {System.out.println(view.getId());
-//					if (view.getId() != null && view.getId().equals(viewId)) {
-//						System.out.println("YES");
-//					}
-//				}
-//			}
-//		}
-//        
-//        View view = getWorkspace().getViewManager().showView("OWLAssertedClassHierarchy");System.out.println(view);
-//        log.info(view);
-//        log.info(view.getId());
-//        
-//        
-//        
-//        AbstractOWLSelectionViewComponent hc = (AbstractOWLSelectionViewComponent) view.getViewComponent();
-//        log.info(hc.getClass());Plugin p = new Plugin();
+        log.info(viewPlugin);
+        log.info(viewPlugin.getId());
+        log.info(viewPlugin.getLabel());
+
+        String viewId = viewPlugin.getId();
+        Workspace workspace = viewPlugin.getWorkspace();
+		if (workspace instanceof TabbedWorkspace) {
+			WorkspaceTab tab = ((TabbedWorkspace) workspace).getSelectedTab();
+            log.info(tab.getLabel());
+			if (tab instanceof WorkspaceViewsTab) {
+				ViewsPane viewPane = ((WorkspaceViewsTab) tab).getViewsPane();
+                log.info(viewPane.getViews());
+				for (View view : viewPane.getViews()) {
+                    log.info("View ID:" + view.getId());
+					if (view.getId() != null && view.getId().equals(viewId)) {
+                        log.info("YES");
+					}
+				}
+			}
+		}
+
+        View view = getWorkspace().getViewManager().showView("OWLAssertedClassHierarchy");
+        System.out.println(view);
+        log.info(view);
+        log.info(view.getId());
+
+        AbstractOWLSelectionViewComponent hc = (AbstractOWLSelectionViewComponent) view.getViewComponent();
+        log.info(hc.getClass());
+        Plugin p = new Plugin();
         log.info("BioPortal View Component initialized");
     }
-    
-    
-
 }

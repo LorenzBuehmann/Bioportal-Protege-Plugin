@@ -25,9 +25,6 @@ import java.util.List;
 public class Plugin extends AbstractOWLClassHierarchyViewComponent implements CreateNewTarget, CreateNewChildTarget,
 		CreateNewSiblingTarget {
 
-	/**
-* 
-*/
 	private static final long serialVersionUID = 8712815067223088069L;
 
 	public void performExtraInitialisation() throws Exception {

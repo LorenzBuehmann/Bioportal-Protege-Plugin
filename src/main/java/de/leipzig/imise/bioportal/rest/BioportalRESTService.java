@@ -11,7 +11,7 @@ import com.google.common.hash.HashCode;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.google.common.io.Files;
-import org.apache.http.client.utils.URIBuilder;
+import de.leipzig.imise.bioportal.BioportalPreferences;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,15 +29,8 @@ public class BioportalRESTService {
 	private static final Logger LOGGER = LoggerFactory.getLogger(BioportalRESTService.class);
 
 	public static final String DEFAULT_BASE_URL = "http://data.bioontology.org";
-	public static final String STAGE_BASE_URL 	= "http://stagerest.bioontology.org/bioportal/";
-	public static final String SUFFIX_ONTOLOGIES = "ontologies/";
 	public static final String SUFFIX_ONTOLOGY_VIRTUAL = "virtual/ontology/";
-	public static final String SUFFIX_ONTOLOGY_VERSIONS = "ontologies/versions/";
-	public static final String SUFFIX_ONTOLOGY_METRICS = "ontologies/metrics/";
 	public static final String SUFFIX_CONCEPTS = "concepts/";
-	public static final String SUFFIX_SEARCH = "search/";
-	public static final String SUFFIX_CATEGORIES = "categories/";
-	public static final String SUFFIX_GROUPS = "groups/";
 	public static final String SEARCH_PROPERTY_ONTOLOGY_IDS = "ontologies=";
 	public static final String SEARCH_PROPERTY_EXACT_MATCH = "isexactmatch";
 	public static final String SEARCH_PROPERTY_INCLUDE_PROPERTIES = "includeproperties";
@@ -50,7 +43,6 @@ public class BioportalRESTService {
 
 	public final static String API_KEY_PARAM = "apikey";	
 	public static final String BP_PRODUCTION_PROTEGE_API_KEY = API_KEY_PARAM + "=8fadfa2c-47de-4487-a1f5-b7af7378d693";
-	public static final String API_KEY = "8fadfa2c-47de-4487-a1f5-b7af7378d693";
 
 	public static final Set<String> META_PROPERTIES = Sets.newHashSet("links", "@context", "hasChildren", "children");
 
@@ -74,7 +66,7 @@ public class BioportalRESTService {
 
 		LOGGER.info("Initializing BioPortal REST services...");
 		// Get the available resources
-		String resourcesString = get(DEFAULT_BASE_URL + "/");
+		String resourcesString = get(BioportalPreferences.getInstance().getRestBaseURL() + "/");
 		JsonNode resources = jsonToNode(resourcesString);
 
 		// Follow the link by looking for available services in the list of links
@@ -91,7 +83,7 @@ public class BioportalRESTService {
 	 * @return the enriched URL
 	 */
 	public static String asBioportalLink(String url) {
-		return url + "?apikey=" + API_KEY;
+		return url + "?apikey=" + BioportalPreferences.getInstance().getRestAPIKey();
 	}
 
 	private static String get(String urlToGet) {
@@ -126,7 +118,7 @@ public class BioportalRESTService {
 			url = new URL(urlToGet);
 			conn = (HttpURLConnection) url.openConnection();
 			conn.setRequestMethod("GET");
-			conn.setRequestProperty("Authorization", "apikey token=" + API_KEY);
+			conn.setRequestProperty("Authorization", "apikey token=" + BioportalPreferences.getInstance().getRestAPIKey());
 			conn.setRequestProperty("Accept", "application/json");
 			is = conn.getInputStream();
 			try (BufferedReader rd = new BufferedReader(new InputStreamReader(is))) {

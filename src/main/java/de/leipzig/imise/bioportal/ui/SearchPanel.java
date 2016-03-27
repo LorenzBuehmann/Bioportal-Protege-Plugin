@@ -1,10 +1,8 @@
 package de.leipzig.imise.bioportal.ui;
 
-import de.leipzig.imise.bioportal.BioportalConstants;
 import de.leipzig.imise.bioportal.BioportalManager;
 import de.leipzig.imise.bioportal.rest.*;
 import org.apache.log4j.Logger;
-import org.ncbo.stanford.bean.search.SearchBean;
 import org.osgi.framework.BundleContext;
 import org.protege.editor.core.ProtegeApplication;
 import org.protege.editor.core.ui.progress.BackgroundTask;
@@ -324,17 +322,6 @@ public class SearchPanel extends JPanel {
 		new OntologyDetailsDialog(BioportalRESTService.getOntology(entity));
 	}
 	
-	private void extractChildren(SearchBean searchBean){
-		String urlString = getExtractChildrenString(searchBean);
-		try {
-			URL url = new URL(urlString);
-			System.out.println(url.toString());
-		} catch (MalformedURLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
-	
 	private void createLazyClassHierarchyTree(final Entity entity){
 //		ClassBean cb = null;
 //		try {
@@ -383,10 +370,10 @@ public class SearchPanel extends JPanel {
 	
 	
 	
-	private void showModuleAxiomsDialog(SearchBean searchBean) {
-		OWLOntology ontology = downloadOntology(searchBean.getOntologyVersionId());
+	private void showModuleAxiomsDialog(Entity searchBean) {
+		OWLOntology ontology = downloadOntology(searchBean.getEntityLinks().getOntology());
 		System.out.println(ontology);
-		OWLOntology module = extractModule(ontology, searchBean.getConceptId());
+		OWLOntology module = extractModule(ontology, searchBean.getId());
 		System.out.println("Module size: " + module.getLogicalAxiomCount());
 		System.out.println(module.getLogicalAxioms());
 //		System.out.println(searchBean.getConceptId());
@@ -397,7 +384,7 @@ public class SearchPanel extends JPanel {
 		JDialog dialog = new JDialog();
 		dialog.setPreferredSize(new Dimension(700, 400));
 		dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
-		dialog.setTitle("Extracted axioms for concept " + searchBean.getContents());
+		dialog.setTitle("Extracted axioms for concept " + searchBean.getPrefLabel());
 		dialog.setModal(true);
 		dialog.add(new JScrollPane(list));
 		dialog.pack();
@@ -405,7 +392,7 @@ public class SearchPanel extends JPanel {
 
 	}
 
-	private OWLOntology downloadOntology(int ontologyVersionID) {
+	private OWLOntology downloadOntology(String ontologyVersionID) {
 		final BackgroundTask task = ProtegeApplication.getBackgroundTaskManager().startTask(
 				"downloading " + ontologyVersionID);
 		System.out.println("http://rest.bioontology.org/bioportal/ontologies/download/" + ontologyVersionID
@@ -491,21 +478,6 @@ public class SearchPanel extends JPanel {
 		}
 		return null;
 
-	}
-
-	private String getExtractChildrenString(SearchBean searchBean) {
-		StringBuffer sb = new StringBuffer();
-		sb.append(BioportalConstants.BP_REST_BASE_URL_STRING);
-		sb.append(BioportalConstants.BP_CONCEPTS_STR);
-		sb.append("/");
-		sb.append(BioportalConstants.BP_CHILDREN_STR);
-		sb.append("/");
-		sb.append(searchBean.getOntologyVersionId());
-		sb.append("/");
-		sb.append(searchBean.getConceptId());
-		System.out.println(sb);
-
-		return sb.toString();
 	}
 
 	private static BundleContext createDummyContext() {

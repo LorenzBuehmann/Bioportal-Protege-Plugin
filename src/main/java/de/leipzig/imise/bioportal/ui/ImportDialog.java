@@ -2,7 +2,6 @@ package de.leipzig.imise.bioportal.ui;
 
 import de.leipzig.imise.bioportal.rest.BioportalRESTService;
 import de.leipzig.imise.bioportal.rest.Entity;
-import org.ncbo.stanford.bean.search.SearchBean;
 import org.protege.editor.core.ProtegeApplication;
 import org.protege.editor.core.ui.progress.BackgroundTask;
 import org.protege.editor.owl.OWLEditorKit;
@@ -31,8 +30,7 @@ public class ImportDialog extends JDialog {
 
 	private OWLEditorKit editorKit;
 	private JEditorPane detailsPane;
-	private SearchBean searchBean;
-	
+
 	private Map<Entity, Set<String>> node2SelectedRelations = new HashMap<>();
 	
 	private Map<Entity, DetailsPanel> node2Details = new HashMap<>();
@@ -64,11 +62,15 @@ public class ImportDialog extends JDialog {
 		classTree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
 		JScrollPane treeScrollPane = new JScrollPane(classTree);
 		treeScrollPane.setPreferredSize(new Dimension(200, 0));
-		add(new JLayer<JComponent>(treeScrollPane, layerUI), BorderLayout.WEST);
+//		add(new JLayer<JComponent>(treeScrollPane, layerUI), BorderLayout.WEST);
 
 		// the details panel in the right
 		detailsPanel = new DetailsPanel(editorKit);
-		add(detailsPanel, BorderLayout.CENTER);
+//		add(detailsPanel, BorderLayout.CENTER);
+
+		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, new JLayer<JComponent>(treeScrollPane, layerUI), detailsPanel);
+		splitPane.setDividerLocation(0.3);
+		add(splitPane, BorderLayout.CENTER);
 
 		// the import button at the bottom
 		JButton importButton = new JButton("Import");
@@ -83,11 +85,27 @@ public class ImportDialog extends JDialog {
 		southPanel.add(importButton, BorderLayout.EAST);
 		add(southPanel, BorderLayout.SOUTH);
 
+
 		// populate the tree
 		ClassTreeLoadingTask task = new ClassTreeLoadingTask(entity);
 		ProtegeApplication.getBackgroundTaskManager().startTask(task);
 		layerUI.start();
 		task.execute();
+	}
+
+	private void showAxiomsToAdd(Set<OWLAxiom> axioms) {
+		OWLAxiomList list = new OWLAxiomList(editorKit);
+		list.setAxioms(axioms);
+
+		JDialog dialog = new JDialog(this);
+		dialog.add(list);
+		dialog.setPreferredSize(new Dimension(600, 300));
+		dialog.pack();
+		dialog.setLocationRelativeTo(this);
+		dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+		dialog.setAlwaysOnTop(true);
+		dialog.setModal(true);
+		dialog.setVisible(true);
 	}
 
 	private JTree createClassTree(Entity entity, DefaultMutableTreeNode root) {
@@ -212,8 +230,8 @@ public class ImportDialog extends JDialog {
 
 		detailsPanel.showDetails(entity);
 	}
-	
-	private void onImportClasses() {
+
+	private void showAxiomsAddedNotification() {
 		// Determine if the GraphicsDevice supports translucency.
 		GraphicsEnvironment ge =
 				GraphicsEnvironment.getLocalGraphicsEnvironment();
@@ -250,8 +268,9 @@ public class ImportDialog extends JDialog {
 
 			d.setVisible(true);
 		}
-
-
+	}
+	
+	private void onImportClasses() {
 //		Set<Object> selectedValues = detailsPanel.getSelectedValues();
 		TreePath[] selection = classTree.getSelectionPaths();
 		if (selection == null) {
@@ -278,6 +297,9 @@ public class ImportDialog extends JDialog {
 			// create and add the subclass axiom
 			OWLAxiom axiom = dataFactory.getOWLSubClassOfAxiom(subClass, superClass);
 			axioms2Add.add(axiom);
+
+			//
+			showAxiomsToAdd(axioms2Add);
 
 			// add the axioms
 			ontMan.addAxioms(ontology, axioms2Add);

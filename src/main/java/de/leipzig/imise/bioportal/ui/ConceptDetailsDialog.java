@@ -1,15 +1,13 @@
 package de.leipzig.imise.bioportal.ui;
 
-import java.awt.Dimension;
-import java.util.Map;
+import de.leipzig.imise.bioportal.rest.Entity;
+import org.protege.editor.core.ui.util.NativeBrowserLauncher;
 
-import javax.swing.JScrollPane;
+import javax.swing.*;
 import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
-
-import de.leipzig.imise.bioportal.rest.Entity;
-import org.ncbo.stanford.util.HTMLUtil;
-import org.protege.editor.core.ui.util.NativeBrowserLauncher;
+import java.awt.*;
+import java.util.Map;
 
 public class ConceptDetailsDialog extends DetailsDialog {
 
@@ -65,7 +63,7 @@ public class ConceptDetailsDialog extends DetailsDialog {
 
 			String color = i % 2 == 0 ? evenColor : oddColor;
 			if (value != null) {
-				String text = HTMLUtil.replaceEOF(value.toString());
+				String text = value.toString();
 				if (text.startsWith("[")) {
 					text = text.substring(1, text.length() - 1);
 				}
