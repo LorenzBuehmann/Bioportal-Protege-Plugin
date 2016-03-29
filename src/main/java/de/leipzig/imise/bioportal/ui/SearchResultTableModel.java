@@ -88,7 +88,7 @@ public class SearchResultTableModel extends AbstractTableModel {
 	}
 	
 	private String getRecordTypeString(String recordType){
-		StringBuffer sb = new StringBuffer();
+		StringBuilder sb = new StringBuilder();
 		String[] temp = recordType.substring(12).split("_");
 		for(String split : temp){
 			sb.append(split.charAt(0));

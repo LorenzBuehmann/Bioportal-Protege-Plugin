@@ -5,9 +5,7 @@ import de.leipzig.imise.bioportal.rest.BioportalRESTService;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
-import org.apache.http.client.utils.URIBuilder;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -56,7 +54,7 @@ public class POJO2HTML {
 						super.append(buffer, entry.getKey(), makeLink(entry.getValue()), fullDetail);
 					}
 				} else {
-					super.append(buffer, fieldName, (value == null) ? value : makeLink(value), fullDetail);
+					super.append(buffer, fieldName, (value == null) ? null : makeLink(value), fullDetail);
 				}
 
 			}
@@ -76,9 +74,8 @@ public class POJO2HTML {
 			} else {
 				if(!isMetaDataField(fieldName)) {
 					if(value instanceof Collection) {
-						Iterator iterator = ((Collection) value).iterator();
-						while(iterator.hasNext()) {
-							buffer.append(ReflectionToStringBuilder.toString(iterator.next(), this));
+						for (Object o : ((Collection) value)) {
+							buffer.append(ReflectionToStringBuilder.toString(o, this));
 						}
 					} else {
 						buffer.append(ReflectionToStringBuilder.toString(makeLink(value), this));
@@ -89,7 +86,6 @@ public class POJO2HTML {
 
 		@Override
 		protected void appendDetail(final StringBuffer buffer, final String fieldName, final Collection<?> coll) {
-			Iterator<?> iterator = coll.iterator();
 
 //			// first value inline with field name
 //			buffer.append(makeLink(iterator.next()));
@@ -99,8 +95,8 @@ public class POJO2HTML {
 //				buffer.append("<tr><td></td><td>" + makeLink(iterator.next()));
 //			}
 
-			while(iterator.hasNext()) {
-				appendDetail(buffer, fieldName, makeLink(iterator.next()));
+			for (Object aColl : coll) {
+				appendDetail(buffer, fieldName, makeLink(aColl));
 			}
 		}
 

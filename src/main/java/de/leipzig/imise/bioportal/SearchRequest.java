@@ -59,21 +59,20 @@ public class SearchRequest {
 	
 	@Override
 	public String toString() {
-		StringBuilder sb = new StringBuilder();
-		sb.append("SEARCH REQUEST:\n");
-		sb.append("Search term: ");
-		sb.append(searchTerm);
-		sb.append("\n");
-		sb.append("Ontology IDs: ");
-		sb.append(ontologyIds);
-		sb.append("\n");
-		sb.append("Exact match: ");
-		sb.append(isExactMatch);
-		sb.append("\n");
-		sb.append("Include properties: ");
-		sb.append(includeProperties);
-		sb.append("\n");
-		return sb.toString();
+		String sb = "SEARCH REQUEST:\n" +
+				"Search term: " +
+				searchTerm +
+				"\n" +
+				"Ontology IDs: " +
+				ontologyIds +
+				"\n" +
+				"Exact match: " +
+				isExactMatch +
+				"\n" +
+				"Include properties: " +
+				includeProperties +
+				"\n";
+		return sb;
 	}
 
 }

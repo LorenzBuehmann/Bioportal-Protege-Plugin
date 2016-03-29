@@ -5,18 +5,18 @@ import de.leipzig.imise.bioportal.rest.Entity;
 import org.protege.editor.core.ProtegeApplication;
 import org.protege.editor.core.ui.progress.BackgroundTask;
 import org.protege.editor.owl.OWLEditorKit;
+import org.protege.editor.owl.ui.UIHelper;
 import org.semanticweb.owlapi.model.*;
+import org.semanticweb.owlapi.vocab.SKOSVocabulary;
 
 import javax.swing.*;
 import javax.swing.event.TreeExpansionEvent;
-import javax.swing.event.TreeSelectionEvent;
-import javax.swing.event.TreeSelectionListener;
 import javax.swing.event.TreeWillExpandListener;
 import javax.swing.plaf.IconUIResource;
 import javax.swing.tree.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutionException;
@@ -43,12 +43,15 @@ public class ImportDialog extends JDialog {
 
 	private final WaitLayerUI layerUI = new WaitLayerUI("Loading");
 
+	private Set<OWLAxiom> renderingAxioms = new HashSet<>();
+	private Set<OWLAxiom> addedAxioms = new HashSet<>();
+
 	public ImportDialog(Window parent, Entity entity, final OWLEditorKit editorKit) {
 		super(parent);
 		this.editorKit = editorKit;
 
 		setLayout(new BorderLayout());
-		setTitle("Import classes from " + entity.getEntityLinks().getOntology());
+		setTitle("Import data from " + entity.getEntityLinks().getOntology());
 		setModal(true);
 		setSize(1000, 600);
 		setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
@@ -56,10 +59,15 @@ public class ImportDialog extends JDialog {
 
 
 		// the class tree on the left
+		UIManager.put("Tree.collapsedIcon", new IconUIResource(new NodeIcon('+')));
+		UIManager.put("Tree.expandedIcon", new IconUIResource(new NodeIcon('-')));
 		classTree = new JTree(new DefaultMutableTreeNode());
 //		classTree.setPreferredSize(new Dimension(200, 0));
 		classTree.setRootVisible(false);
 		classTree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
+		// set cell renderer to display entity label
+		classTree.setCellRenderer(new EntityTreeCellRenderer(editorKit));
+
 		JScrollPane treeScrollPane = new JScrollPane(classTree);
 		treeScrollPane.setPreferredSize(new Dimension(200, 0));
 //		add(new JLayer<JComponent>(treeScrollPane, layerUI), BorderLayout.WEST);
@@ -68,19 +76,13 @@ public class ImportDialog extends JDialog {
 		detailsPanel = new DetailsPanel(editorKit);
 //		add(detailsPanel, BorderLayout.CENTER);
 
-		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, new JLayer<JComponent>(treeScrollPane, layerUI), detailsPanel);
+		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, new JLayer<>(treeScrollPane, layerUI), detailsPanel);
 		splitPane.setDividerLocation(0.3);
 		add(splitPane, BorderLayout.CENTER);
 
 		// the import button at the bottom
 		JButton importButton = new JButton("Import");
-		importButton.addActionListener(new ActionListener() {
-
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				onImportClasses();
-			}
-		});
+		importButton.addActionListener(e -> onImportClasses());
 		JPanel southPanel = new JPanel(new BorderLayout());
 		southPanel.add(importButton, BorderLayout.EAST);
 		add(southPanel, BorderLayout.SOUTH);
@@ -91,6 +93,18 @@ public class ImportDialog extends JDialog {
 		ProtegeApplication.getBackgroundTaskManager().startTask(task);
 		layerUI.start();
 		task.execute();
+
+		addWindowListener(new WindowAdapter() {
+			@Override
+			public void windowClosed(WindowEvent e) {
+				onDialogClosed();
+			}
+		});
+	}
+
+	private void onDialogClosed() {
+		renderingAxioms.removeAll(addedAxioms);
+		editorKit.getOWLModelManager().getOWLOntologyManager().removeAxioms(editorKit.getOWLModelManager().getActiveOntology(), renderingAxioms);
 	}
 
 	private void showAxiomsToAdd(Set<OWLAxiom> axioms) {
@@ -108,10 +122,29 @@ public class ImportDialog extends JDialog {
 		dialog.setVisible(true);
 	}
 
-	private JTree createClassTree(Entity entity, DefaultMutableTreeNode root) {
-		UIManager.put("Tree.collapsedIcon", new IconUIResource(new NodeIcon('+')));
-		UIManager.put("Tree.expandedIcon", new IconUIResource(new NodeIcon('-')));
+	private Set<OWLAxiom> createOntologyFromTree(DefaultMutableTreeNode root) {
+		OWLDataFactory df = editorKit.getOWLModelManager().getOWLDataFactory();
 
+		Set<OWLAxiom> axioms = new HashSet<>();
+		Enumeration<DefaultMutableTreeNode> en = root.depthFirstEnumeration();
+		while (en.hasMoreElements()) {
+			DefaultMutableTreeNode node = en.nextElement();
+
+			Entity entity = (Entity) node.getUserObject();
+
+			OWLClass cls = df.getOWLClass(IRI.create(entity.getId()));
+			axioms.add(df.getOWLDeclarationAxiom(cls));
+
+			OWLAnnotation ann = df.getOWLAnnotation(
+					df.getOWLAnnotationProperty(SKOSVocabulary.PREFLABEL.getIRI()),
+					df.getOWLLiteral(entity.getPrefLabel()));
+			OWLAnnotationAssertionAxiom annAxiom = df.getOWLAnnotationAssertionAxiom(cls.getIRI(), ann);
+			axioms.add(annAxiom);
+		}
+		return axioms;
+	}
+
+	private JTree createClassTree(Entity entity, DefaultMutableTreeNode root) {
 //		Collection<Entity> children = BioportalRESTService.getRoots(root);
 //		DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode(root);
 //		if(children != null){
@@ -125,6 +158,8 @@ public class ImportDialog extends JDialog {
 //			}
 //		}
 
+		renderingAxioms.addAll(createOntologyFromTree(root));
+		editorKit.getOWLModelManager().getOWLOntologyManager().addAxioms(editorKit.getOWLModelManager().getActiveOntology(), renderingAxioms);
 		((DefaultTreeModel) classTree.getModel()).setRoot(root);
 
 //		JTreeUtils.sortTree(root);
@@ -135,9 +170,6 @@ public class ImportDialog extends JDialog {
 		// select the entity node
 		DefaultMutableTreeNode entityNode = JTreeUtils.searchNode((DefaultMutableTreeNode) classTree.getModel().getRoot(), entity);
 		TreePath path = new TreePath(((DefaultTreeModel) classTree.getModel()).getPathToRoot(entityNode));
-
-		// set cell renderer to display entity label
-		classTree.setCellRenderer(new EntityTreeCellRenderer());
 
 		// expand node action listener
 		classTree.addTreeWillExpandListener(new TreeWillExpandListener() {
@@ -161,16 +193,13 @@ public class ImportDialog extends JDialog {
 		});
 
 		// the selection listener
-		classTree.addTreeSelectionListener(new TreeSelectionListener() {
-
-			@Override
-			public void valueChanged(TreeSelectionEvent e) {
-				TreePath[] paths = e.getPaths();
-				for (int i=0; i<paths.length; i++) {
-					if (e.isAddedPath(i)) {
-						classTree.repaint();
-						DefaultMutableTreeNode node = (DefaultMutableTreeNode)paths[i].getLastPathComponent();
-						Entity entity = (Entity)node.getUserObject();
+		classTree.addTreeSelectionListener(e -> {
+			TreePath[] paths = e.getPaths();
+			for (int i = 0; i < paths.length; i++) {
+				if (e.isAddedPath(i)) {
+					classTree.repaint();
+					DefaultMutableTreeNode node = (DefaultMutableTreeNode)paths[i].getLastPathComponent();
+					Entity entity1 = (Entity)node.getUserObject();
 //						if(!cb.getRelations().containsKey(ClassBean.SUB_CLASS_PROPERTY)){
 //							setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 ////							editorKit.getWorkspace().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
@@ -178,22 +207,21 @@ public class ImportDialog extends JDialog {
 //						} else {
 //							onShowDetails(entity);
 //						}
-						onShowDetails(entity);
+					onShowDetails(entity1);
 
-						break;
-					} else {
-						// This node has been deselected
-						break;
-					}
+					break;
+				} else {
+					// This node has been deselected
+					break;
 				}
-
 			}
+
 		});
-		EntityTreeCellRenderer renderer =
-				(EntityTreeCellRenderer) classTree.getCellRenderer();
-		renderer.setTextSelectionColor(Color.white);
-		renderer.setBackgroundSelectionColor(Color.blue);
-		renderer.setBorderSelectionColor(Color.black);
+//		EntityTreeCellRenderer renderer =
+//				(EntityTreeCellRenderer) classTree.getCellRenderer();
+//		renderer.setTextSelectionColor(Color.white);
+//		renderer.setBackgroundSelectionColor(Color.blue);
+//		renderer.setBorderSelectionColor(Color.black);
 //		tree.setCellRenderer(new DefaultTreeCellRenderer(){
 //			@Override
 //			public Component getTreeCellRendererComponent(JTree tree, Object value, boolean sel, boolean expanded,
@@ -254,17 +282,10 @@ public class ImportDialog extends JDialog {
 			d.setLocation(scrSize.width - d.getWidth(), scrSize.height - toolHeight.bottom - d.getHeight());
 
 			ScheduledExecutorService s = Executors.newSingleThreadScheduledExecutor();
-			s.schedule(new Runnable() {
-				public void run() {
-					SwingUtilities.invokeLater(new Runnable() {
-						@Override
-						public void run() {
-							d.setVisible(false);
-							d.dispose();
-						}
-					});
-				}
-			}, 3, TimeUnit.SECONDS);
+			s.schedule((Runnable) () -> SwingUtilities.invokeLater(() -> {
+				d.setVisible(false);
+				d.dispose();
+			}), 3, TimeUnit.SECONDS);
 
 			d.setVisible(true);
 		}
@@ -273,9 +294,7 @@ public class ImportDialog extends JDialog {
 	private void onImportClasses() {
 //		Set<Object> selectedValues = detailsPanel.getSelectedValues();
 		TreePath[] selection = classTree.getSelectionPaths();
-		if (selection == null) {
-
-		} else {
+		if (selection != null) {
 			OWLOntologyManager ontMan = editorKit.getOWLModelManager().getOWLOntologyManager();
 			OWLDataFactory dataFactory = ontMan.getOWLDataFactory();
 			OWLOntology ontology = editorKit.getOWLModelManager().getActiveOntology();
@@ -298,12 +317,24 @@ public class ImportDialog extends JDialog {
 			OWLAxiom axiom = dataFactory.getOWLSubClassOfAxiom(subClass, superClass);
 			axioms2Add.add(axiom);
 
-			//
-			showAxiomsToAdd(axioms2Add);
+			OWLAxiomList list = new OWLAxiomList(editorKit);
+			list.setAxioms(axioms2Add);
+			JPanel panel = new JPanel();
+			panel.add(list);
 
-			// add the axioms
-			ontMan.addAxioms(ontology, axioms2Add);
-			System.out.println("Adding axioms:" + axioms2Add);
+			if(new UIHelper(editorKit).showValidatingDialog(
+					"Add axioms to ontology",
+					panel,
+					list) == JOptionPane.OK_OPTION) {
+				// add the axioms
+				ontMan.addAxioms(ontology, axioms2Add);
+				System.out.println("Added axioms:" + axioms2Add);
+
+				addedAxioms.addAll(axioms2Add);
+			}
+//			showAxiomsToAdd(axioms2Add);
+
+
 
 //			for (TreePath treePath : selection) {
 //				System.out.println("Path: " + treePath);
@@ -330,8 +361,7 @@ public class ImportDialog extends JDialog {
 
 	private OWLClass convert(Entity entity) {
 		OWLDataFactory dataFactory = editorKit.getOWLModelManager().getOWLOntologyManager().getOWLDataFactory();
-		OWLClass cls = dataFactory.getOWLClass(IRI.create(entity.getId()));
-		return cls;
+		return dataFactory.getOWLClass(IRI.create(entity.getId()));
 	}
 
 	private Set<OWLAxiom> getMetaData(Entity entity) {
@@ -341,8 +371,6 @@ public class ImportDialog extends JDialog {
 
 		OWLClass cls = dataFactory.getOWLClass(IRI.create(entity.getId()));
 		
-		OWLOntology ontology = editorKit.getOWLModelManager().getActiveOntology();
-
 		Map<OWLProperty, String> selectedValues = detailsPanel.getSelectedValues(entity);
 
 		for(Entry<OWLProperty, String> entry : selectedValues.entrySet()) {
@@ -358,10 +386,6 @@ public class ImportDialog extends JDialog {
 				ax = dataFactory.getOWLAnnotationAssertionAxiom(cls.getIRI(), anno);
 
 				axioms.add(ax);
-			} else if(property.isOWLDataProperty()) {
-
-			} else {
-
 			}
 		}
 		return axioms;
@@ -405,9 +429,7 @@ public class ImportDialog extends JDialog {
 				model.removeNodeFromParent((MutableTreeNode) model.getChild(nodeToExpand, 0));
 				setCursor(Cursor.getDefaultCursor());
 //				editorKit.getWorkspace().setCursor(Cursor.getDefaultCursor());
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			} catch (ExecutionException e) {
+			} catch (InterruptedException | ExecutionException e) {
 				e.printStackTrace();
 			}
 		}
@@ -438,9 +460,7 @@ public class ImportDialog extends JDialog {
 				result = get();
 				createClassTree(entity, result);
 //				editorKit.getWorkspace().setCursor(Cursor.getDefaultCursor());
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			} catch (ExecutionException e) {
+			} catch (InterruptedException | ExecutionException e) {
 				e.printStackTrace();
 			}
 		}

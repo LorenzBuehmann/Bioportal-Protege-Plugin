@@ -1,18 +1,28 @@
 package de.leipzig.imise.bioportal.ui;
 
 import de.leipzig.imise.bioportal.rest.Entity;
+import org.protege.editor.owl.OWLEditorKit;
+import org.protege.editor.owl.ui.tree.OWLObjectTreeCellRenderer;
+import org.semanticweb.owlapi.model.*;
+import org.semanticweb.owlapi.vocab.SKOSVocabulary;
 
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.DefaultTreeCellEditor;
 import javax.swing.tree.DefaultTreeCellRenderer;
-import javax.swing.tree.TreeCellRenderer;
 import java.awt.*;
 
 /**
  * @author Lorenz Buehmann
  */
 public class EntityTreeCellRenderer extends DefaultTreeCellRenderer {
+
+	private final OWLObjectTreeCellRenderer renderer;
+	private OWLEditorKit editorKit;
+
+	public EntityTreeCellRenderer(OWLEditorKit editorKit) {
+		this.editorKit = editorKit;
+		renderer = new OWLObjectTreeCellRenderer(editorKit);
+	}
 
 	@Override
 	public Component getTreeCellRendererComponent(JTree tree, Object value, boolean selected, boolean expanded,
@@ -26,7 +36,12 @@ public class EntityTreeCellRenderer extends DefaultTreeCellRenderer {
 		if (value != null && value instanceof DefaultMutableTreeNode) {
 			Object userObject = ((DefaultMutableTreeNode) value).getUserObject();
 			if(userObject instanceof Entity) {
-				label.setText(((Entity) userObject).getPrefLabel());
+				Entity entity = (Entity) userObject;
+				label.setText(entity.getPrefLabel());
+				OWLDataFactory df = editorKit.getOWLModelManager().getOWLDataFactory();
+				OWLClass cls = df.getOWLClass(IRI.create(entity.getId()));
+
+				return renderer.getTreeCellRendererComponent(tree, cls, selected, expanded, leaf, row, hasFocus);
 			} else {
 				label.setText(userObject.toString());
 			}

@@ -1,7 +1,6 @@
 package de.leipzig.imise.bioportal.ui;
 
 import java.awt.Font;
-import java.util.Collection;
 
 import javax.swing.JDialog;
 import javax.swing.JEditorPane;
@@ -32,14 +31,14 @@ public abstract class DetailsDialog extends JDialog {
 	}
 	
 	protected String getDetailsProperty(String name, String value, String color){
-		StringBuffer buffer = new StringBuffer();
+		StringBuilder buffer = new StringBuilder();
 		if(value != null){
 			buffer.append("<tr>");
-			buffer.append("<td class=\"servBodL\" style=\"background-color:" + color
-					+ ";padding:7px;font-weight: bold;\" >");
+			buffer.append("<td class=\"servBodL\" style=\"background-color:").append(color).append(
+					";padding:7px;font-weight: bold;\" >");
 			buffer.append(name);
 			buffer.append("</td>");
-			buffer.append("<td class=\"servBodL\" style=\"background-color:" + color + ";padding:7px;\" >");
+			buffer.append("<td class=\"servBodL\" style=\"background-color:").append(color).append(";padding:7px;\" >");
 			buffer.append(value);
 			buffer.append("</td>");
 			buffer.append("</tr>");

@@ -5,9 +5,7 @@ import de.leipzig.imise.bioportal.rest.Entity;
 import org.semanticweb.owlapi.model.OWLProperty;
 
 import javax.swing.table.AbstractTableModel;
-import javax.swing.table.DefaultTableModel;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 

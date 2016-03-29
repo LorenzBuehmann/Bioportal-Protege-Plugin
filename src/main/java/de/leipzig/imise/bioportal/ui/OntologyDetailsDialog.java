@@ -5,7 +5,6 @@ import java.awt.Dimension;
 import javax.swing.JDialog;
 import javax.swing.JScrollPane;
 import javax.swing.event.HyperlinkEvent;
-import javax.swing.event.HyperlinkListener;
 
 import de.leipzig.imise.bioportal.rest.BioportalRESTService;
 import de.leipzig.imise.bioportal.rest.Ontology;
@@ -16,7 +15,10 @@ public class OntologyDetailsDialog extends DetailsDialog {
 	
 	public OntologyDetailsDialog(Ontology ontology){
 
-		StringBuffer buffer = new StringBuffer();
+		String buffer = POJO2HTML.makeHTML(BioportalRESTService.getOntologySubmission(ontology)) +
+				"<p><b>" + asHTMLLink(ontology.getLinks().getUi(), "Open ontology in Bioportal") +
+				"</b></p>" +
+				"</body></html>";
 //		buffer.append("<html><body>");
 //		buffer.append("<table width=\"100%\" class=\"servicesT\" style=\"border-collapse:collapse;border-width:0px;padding:5px\"><tr>");
 //
@@ -26,19 +28,12 @@ public class OntologyDetailsDialog extends DetailsDialog {
 		String oddColor = "#F4F2F3";
 		String evenColor = "#E6E6E5";
 
-		buffer.append(POJO2HTML.makeHTML(BioportalRESTService.getOntologySubmission(ontology)));
-
-		buffer.append("<p><b>" + asHTMLLink(ontology.getLinks().getUi(), "Open ontology in Bioportal") + "</b></p>");
-
-		buffer.append("</body></html>");
-		detailsPane.setText(buffer.toString());
+		detailsPane.setText(buffer);
 		detailsPane.setPreferredSize(new Dimension(700, 500));
 
-		detailsPane.addHyperlinkListener(new HyperlinkListener() {
-			public void hyperlinkUpdate(HyperlinkEvent e) {
-				if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
-					NativeBrowserLauncher.openURL(e.getURL().toString());
-				}
+		detailsPane.addHyperlinkListener(e -> {
+			if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
+				NativeBrowserLauncher.openURL(e.getURL().toString());
 			}
 		});
 

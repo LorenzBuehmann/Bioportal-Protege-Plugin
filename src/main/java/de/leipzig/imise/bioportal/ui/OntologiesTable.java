@@ -4,11 +4,11 @@ import de.leipzig.imise.bioportal.BioportalManager;
 import de.leipzig.imise.bioportal.rest.Ontology;
 import org.jdesktop.swingx.JXTable;
 import org.jdesktop.swingx.decorator.ColorHighlighter;
-import org.jdesktop.swingx.decorator.ComponentAdapter;
 import org.jdesktop.swingx.decorator.CompoundHighlighter;
 import org.jdesktop.swingx.decorator.HighlightPredicate;
 import org.jdesktop.swingx.decorator.HighlightPredicate.NotHighlightPredicate;
 import org.jdesktop.swingx.renderer.DefaultTableRenderer;
+import org.jdesktop.swingx.renderer.StringValue;
 
 import javax.swing.*;
 import java.awt.*;
@@ -27,25 +27,17 @@ public class OntologiesTable extends JXTable {
 //		addHighlighter(HighlighterFactory.createAlternateStriping());
 //		addHighlighter(new ColorHighlighter(HighlightPredicate.ROLLOVER_ROW, 
 //			      Color.CYAN, Color.BLACK)); 
-		HighlightPredicate selectedPredicate = new HighlightPredicate() { 
-            
-            public boolean isHighlighted(Component renderer, 
-                    ComponentAdapter adapter) { 
-                int modelColumn = adapter.getColumnIndex("selected"); 
-                return ((Boolean) adapter.getValue(modelColumn)).booleanValue(); 
-            } 
-             
-        }; 
+		HighlightPredicate selectedPredicate = (renderer, adapter) -> {
+			int modelColumn = adapter.getColumnIndex("selected");
+			return (Boolean) adapter.getValue(modelColumn);
+		};
         setHighlighters(new CompoundHighlighter(
         		new ColorHighlighter(selectedPredicate, Color.RED, Color.WHITE), 
         		new CompoundHighlighter(
         				new NotHighlightPredicate(selectedPredicate), new ColorHighlighter(HighlightPredicate.ROLLOVER_ROW, Color.CYAN, Color.BLACK))));
 		getColumn(0).setMinWidth(20);
 		getColumn(0).setMaxWidth(20);
-		org.jdesktop.swingx.renderer.StringValue sv = new org.jdesktop.swingx.renderer.StringValue() {
-		      public String getString(Object value) {
-		        return ((Ontology)value).getName();
-		 }};
+		org.jdesktop.swingx.renderer.StringValue sv = (StringValue) value -> ((Ontology)value).getName();
 		 setDefaultRenderer(Ontology.class, new DefaultTableRenderer(sv));
 //		getColumn(1).setCellRenderer(new DefaultTableCellRenderer(){
 //			@Override

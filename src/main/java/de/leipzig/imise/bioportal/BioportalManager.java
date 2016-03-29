@@ -4,8 +4,7 @@ import de.leipzig.imise.bioportal.cache.SearchCache;
 import de.leipzig.imise.bioportal.rest.BioportalRESTService;
 import de.leipzig.imise.bioportal.rest.Ontology;
 import de.leipzig.imise.bioportal.rest.Page;
-import org.protege.editor.owl.model.history.HistoryManager;
-import org.protege.editor.owl.model.history.HistoryManagerImpl;
+import org.semanticweb.owlapi.model.OWLAxiom;
 
 import java.util.*;
 
@@ -27,6 +26,10 @@ public class BioportalManager {
 		}
 		return instance;
 	}
+
+	public void addAxioms(Set<OWLAxiom> axioms) {
+
+	}
 	
 	public void setOntologySelected(Ontology ontology, boolean b) {
         if(b) {
@@ -43,7 +46,7 @@ public class BioportalManager {
     }
 	
 	public boolean isSelectedOntology(Ontology ontologyBean){
-		ontologies.get(ontologyBean).booleanValue();
+		ontologies.get(ontologyBean);
 		return selectedOntologies.contains(ontologyBean);
 	}
 	
@@ -51,7 +54,7 @@ public class BioportalManager {
 		Set<Ontology> o = ontologies.keySet();
 		if(o.isEmpty()){
 			for(Ontology ontology : BioportalRESTService.getOntologies()){
-				ontologies.put(ontology, Boolean.valueOf(false));
+				ontologies.put(ontology, false);
 			}
 		}
 		return Collections.unmodifiableSet(ontologies.keySet());

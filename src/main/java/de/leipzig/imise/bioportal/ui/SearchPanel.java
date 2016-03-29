@@ -11,7 +11,6 @@ import org.protege.editor.core.ui.util.CheckTableModel;
 import org.protege.editor.owl.OWLEditorKit;
 import org.protege.editor.owl.OWLEditorKitFactory;
 import org.protege.editor.owl.model.OWLModelManager;
-import org.protege.editor.owl.model.SaveErrorHandler;
 import org.protege.editor.owl.ui.error.OntologyLoadErrorHandlerUI;
 import org.protege.editor.owl.ui.list.OWLAxiomList;
 import org.protege.editor.owl.ui.ontology.imports.missing.MissingImportHandlerUI;
@@ -38,7 +37,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.net.UnknownHostException;
@@ -63,7 +61,7 @@ public class SearchPanel extends JPanel {
 	private JComboBox categoriesBox;
 	private JComboBox groupsBox;
 	private OntologiesTable ontologiesTable;
-	CheckTable<Ontology> ontologiesTable1;
+	private CheckTable<Ontology> ontologiesTable1;
 	private JTree classTree;
 
 	private final WaitLayerUI layerUI = new WaitLayerUI("Searching");
@@ -137,12 +135,7 @@ public class SearchPanel extends JPanel {
 		c.gridwidth = GridBagConstraints.REMAINDER;
 		searchFieldPanel.add(searchButton, c);
 
-		searchButton.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				onSearch();
-			}
-		});
+		searchButton.addActionListener(e -> onSearch());
 
 		searchField.addKeyListener(new KeyAdapter() {
 			@Override
@@ -181,12 +174,7 @@ public class SearchPanel extends JPanel {
 		DefaultComboBoxModel<Object> loadingCatsModel = new DefaultComboBoxModel<>();
 		loadingCatsModel.addElement("Loading categories...");
 		categoriesBox.setModel(loadingCatsModel);
-		categoriesBox.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				updateOntologiesList();
-			}
-		});
+		categoriesBox.addActionListener(e -> updateOntologiesList());
 		holderPanel.add(new JLabel("Categories"), gbc);
 		gbc.gridwidth = GridBagConstraints.REMAINDER;
 		gbc.fill = GridBagConstraints.HORIZONTAL;
@@ -196,12 +184,7 @@ public class SearchPanel extends JPanel {
 		DefaultComboBoxModel<Object> loadingGroupsModel = new DefaultComboBoxModel<>();
 		loadingGroupsModel.addElement("Loading groups...");
 		groupsBox.setModel(loadingGroupsModel);
-		groupsBox.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				updateOntologiesList();
-			}
-		});
+		groupsBox.addActionListener(e -> updateOntologiesList());
 		gbc.fill = GridBagConstraints.NONE;
 		gbc.gridwidth = 1;
 		holderPanel.add(new JLabel("Groups"), gbc);
@@ -220,7 +203,7 @@ public class SearchPanel extends JPanel {
 					l.setText(((Ontology)value).getName());
 				}
 				return c;
-			};
+			}
 		});
 		ontologiesTable = new OntologiesTable();
 		JScrollPane scroll = new JScrollPane(ontologiesTable1);
@@ -289,7 +272,7 @@ public class SearchPanel extends JPanel {
 		
 		JPanel searchResultPanel = new JPanel(new BorderLayout());
 		searchResultPanel.setBorder(new TitledBorder("Matching terms"));
-		searchResultPanel.add(new JLayer<JComponent>(new JScrollPane(searchResultTable), layerUI), BorderLayout.CENTER);
+		searchResultPanel.add(new JLayer<>(new JScrollPane(searchResultTable), layerUI), BorderLayout.CENTER);
 		
 		add(splitPane, BorderLayout.NORTH);
 		add(searchResultPanel, BorderLayout.CENTER);
@@ -414,8 +397,6 @@ public class SearchPanel extends JPanel {
 			OWLOntology ontology = man.loadOntologyFromOntologyDocument(in);
 			ProtegeApplication.getBackgroundTaskManager().endTask(task);
 			return ontology;
-		} catch (MalformedURLException e) {
-			e.printStackTrace();
 		} catch (OWLOntologyCreationIOException e) {
 			// IOExceptions during loading get wrapped in an
 			// OWLOntologyCreationIOException
@@ -515,11 +496,7 @@ public class SearchPanel extends JPanel {
 
 //				modelManager.setExplanationManager(new ExplanationManager(this));
 				modelManager.setMissingImportHandler(new MissingImportHandlerUI(this));
-				modelManager.setSaveErrorHandler(new SaveErrorHandler() {
-					@Override
-					public void handleErrorSavingOntology(OWLOntology ont, URI physicalURIForOntology,
-														  OWLOntologyStorageException e) throws Exception {
-					}
+				modelManager.setSaveErrorHandler((ont, physicalURIForOntology, e) -> {
 				});
 
 //				ontologyChangeListener = owlOntologyChanges -> modifiedDocument = true;
@@ -543,22 +520,17 @@ public class SearchPanel extends JPanel {
 	}
 
 	public static void main(String[] args) throws Exception{
-		OWLOntology ont = OWLManager.createOWLOntologyManager().createOntology();
 		OWLEditorKit editorKit = createDummyEditorKit();
 		editorKit.getOWLModelManager().createNewOntology(new OWLOntologyID(IRI.create("http://test.org")), URI.create("http://test.org"));
-		SwingUtilities.invokeLater(new Runnable() {
+		SwingUtilities.invokeLater(() -> {
+			JFrame dialog = new JFrame("Bioportal");
+			dialog.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+			dialog.setType(JFrame.Type.UTILITY);
+			dialog.add(new SearchPanel(editorKit));
+			dialog.setPreferredSize(new Dimension(1200, 600));
 
-			@Override
-			public void run() {
-				JFrame dialog = new JFrame("Bioportal");
-				dialog.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-				dialog.setType(JFrame.Type.UTILITY);
-				dialog.add(new SearchPanel(editorKit));
-				dialog.setPreferredSize(new Dimension(1200, 600));
-
-				dialog.pack();
-				dialog.setVisible(true);
-			}
+			dialog.pack();
+			dialog.setVisible(true);
 		});
 
 
@@ -576,12 +548,7 @@ public class SearchPanel extends JPanel {
 				ontologies.add(ontology);
 			}
 		}
-		Collections.sort(ontologies, new Comparator<Ontology>() {
-			@Override
-			public int compare(Ontology o1, Ontology o2) {
-				return o1.getName().compareTo(o2.getName());
-			}
-		});
+		Collections.sort(ontologies, (o1, o2) -> o1.getName().compareTo(o2.getName()));
 		CheckTableModel<Ontology> model = ontologiesTable1.getModel();
 		model.setData(ontologies, false);
 //		ontologiesTable.setOntologies(ontologies);
@@ -617,9 +584,7 @@ public class SearchPanel extends JPanel {
 				result = get();
 				searchResultTable.setSearchResults(searchTerm, result.getEntities());
 //				editorKit.getWorkspace().setCursor(Cursor.getDefaultCursor());
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			} catch (ExecutionException e) {
+			} catch (InterruptedException | ExecutionException e) {
 				e.printStackTrace();
 			}
 		}
@@ -639,7 +604,7 @@ public class SearchPanel extends JPanel {
 
 		@Override
 		protected List<Ontology> doInBackground() throws Exception {
-			return new ArrayList<Ontology>(BioportalManager.getInstance().getOntologies());
+			return new ArrayList<>(BioportalManager.getInstance().getOntologies());
 		}
 		
 		@Override
@@ -648,19 +613,12 @@ public class SearchPanel extends JPanel {
 			List<Ontology> result;
 			try {
 				result = get();
-				Collections.sort(result, new Comparator<Ontology>() {
-					@Override
-					public int compare(Ontology o1, Ontology o2) {
-						return o1.getName().compareTo(o2.getName());
-					}
-				});
+				Collections.sort(result, (o1, o2) -> o1.getName().compareTo(o2.getName()));
 				CheckTableModel<Ontology> model = ontologiesTable1.getModel();
 				model.setData(result, false);
 				ontologiesTable.setOntologies(result);
 //				editorKit.getWorkspace().setCursor(Cursor.getDefaultCursor());
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			} catch (ExecutionException e) {
+			} catch (InterruptedException | ExecutionException e) {
 				e.printStackTrace();
 			}
 		}
@@ -680,20 +638,13 @@ public class SearchPanel extends JPanel {
 			List<Category> result;
 			try {
 				result = get();
-				Collections.sort(result, new Comparator<Category>() {
-					@Override
-					public int compare(Category o1, Category o2) {
-						return o1.getName().compareTo(o2.getName());
-					}
-				});
+				Collections.sort(result, (o1, o2) -> o1.getName().compareTo(o2.getName()));
 				Category allCategory = new Category();
 				allCategory.setName("ALL CATEGORIES");
 				result.add(0, allCategory);
 				categoriesBox.setModel(new DefaultComboBoxModel(result.toArray()));
 //				editorKit.getWorkspace().setCursor(Cursor.getDefaultCursor());
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			} catch (ExecutionException e) {
+			} catch (InterruptedException | ExecutionException e) {
 				e.printStackTrace();
 			}
 		}
@@ -713,20 +664,13 @@ public class SearchPanel extends JPanel {
 			List<Group> result;
 			try {
 				result = get();
-				Collections.sort(result, new Comparator<Group>() {
-					@Override
-					public int compare(Group o1, Group o2) {
-						return o1.getName().compareTo(o2.getName());
-					}
-				});
+				Collections.sort(result, (o1, o2) -> o1.getName().compareTo(o2.getName()));
 				Group allGroup = new Group();
 				allGroup.setName("ALL GROUPS");
 				result.add(0, allGroup);
 				groupsBox.setModel(new DefaultComboBoxModel(result.toArray()));
 //				editorKit.getWorkspace().setCursor(Cursor.getDefaultCursor());
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			} catch (ExecutionException e) {
+			} catch (InterruptedException | ExecutionException e) {
 				e.printStackTrace();
 			}
 		}

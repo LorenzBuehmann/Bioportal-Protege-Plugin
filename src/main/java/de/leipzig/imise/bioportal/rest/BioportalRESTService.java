@@ -103,15 +103,13 @@ public class BioportalRESTService {
 					LOGGER.info("loading from cache directory...");
 					result = Joiner.on("\n").join(Files.readLines(cacheFile, Charsets.UTF_8));
 					return result;
-				} catch (FileNotFoundException e) {
-					e.printStackTrace();
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
 			}
 		}
 
-		InputStream is = null;
+		InputStream is;
 		URL url;
 		HttpURLConnection conn;
 		try {
@@ -157,7 +155,7 @@ public class BioportalRESTService {
 	
 	public static URL getConceptPropertiesURL(int ontologyVersionId, String conceptId){
 		URL url = null;
-		StringBuffer sb = new StringBuffer();
+		StringBuilder sb = new StringBuilder();
 		sb.append(DEFAULT_BASE_URL);
 		sb.append(SUFFIX_CONCEPTS);
 		sb.append(ontologyVersionId);
@@ -181,7 +179,7 @@ public class BioportalRESTService {
 	
 	public static URL getConceptPropertiesVirtualURL(int ontologyVirtualId, String conceptId){
 		URL url = null;
-		StringBuffer sb = new StringBuffer();
+		StringBuilder sb = new StringBuilder();
 		sb.append(DEFAULT_BASE_URL);
 		sb.append(SUFFIX_ONTOLOGY_VIRTUAL);
 		sb.append(ontologyVirtualId);
@@ -202,7 +200,7 @@ public class BioportalRESTService {
 	}
 	
 	private static String getSearchTermString(String searchTerm, List<String> ontologyIds, boolean isExactMatch, boolean includeProperties){
-		StringBuffer sb = new StringBuffer("?");
+		StringBuilder sb = new StringBuilder("?");
 
 		sb.append("q=").append(searchTerm);
 
@@ -232,7 +230,7 @@ public class BioportalRESTService {
 	
 	private static URL getSearchClassesURL(String searchTerm, List<String> ontologyIds, boolean isExactMatch, boolean includeProperties){
 		URL url = null;
-		StringBuffer sb = new StringBuffer(getSearchTermString(searchTerm, ontologyIds, isExactMatch, includeProperties));
+		StringBuilder sb = new StringBuilder(getSearchTermString(searchTerm, ontologyIds, isExactMatch, includeProperties));
 		sb.append("&");
 		sb.append(SEARCH_PROPERTY_OBJECT_TYPES);
 		sb.append("=").append(SEARCH_PROPERTY_OBJECT_TYPE_CLASS);
@@ -246,7 +244,7 @@ public class BioportalRESTService {
 	
 	private static URL getSearchPropertiesURL(String searchTerm, List<String> ontologyIds, boolean isExactMatch, boolean includeProperties){
 		URL url = null;
-		StringBuffer sb = new StringBuffer(getSearchTermString(searchTerm, ontologyIds, isExactMatch, includeProperties));
+		StringBuilder sb = new StringBuilder(getSearchTermString(searchTerm, ontologyIds, isExactMatch, includeProperties));
 		sb.append("&");
 		sb.append(SEARCH_PROPERTY_OBJECT_TYPES);
 		sb.append("=").append(SEARCH_PROPERTY_OBJECT_TYPE_PROPERTY);
@@ -262,8 +260,6 @@ public class BioportalRESTService {
 		JsonNode root = null;
 		try {
 			root = mapper.readTree(json);
-		} catch (JsonProcessingException e) {
-			e.printStackTrace();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -406,10 +402,9 @@ public class BioportalRESTService {
 
 		ArrayNode rootNode = (ArrayNode) jsonToNode(get(entity.getEntityLinks().getChildren() + "?include=hasChildren,prefLabel,synonym,definition")).get("collection");
 
-		Iterator<JsonNode> iterator = rootNode.iterator();
-		while (iterator.hasNext()) {
+		for (JsonNode aRootNode : rootNode) {
 			try {
-				Entity child = mapper.readValue(iterator.next().toString(), Entity.class);
+				Entity child = mapper.readValue(aRootNode.toString(), Entity.class);
 				entities.add(child);
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -420,8 +415,6 @@ public class BioportalRESTService {
 	}
 
 	public static DefaultMutableTreeNode getTree(Entity entity) {
-		Set<Entity> entities = new HashSet<>();
-
 		DefaultMutableTreeNode tree = new DefaultMutableTreeNode();
 		tree.setUserObject(Entity.TOP_ENTITY);
 
@@ -433,16 +426,15 @@ public class BioportalRESTService {
 	}
 
 	private static void createTree(DefaultMutableTreeNode tree, ArrayNode childrenNode) {
-		Iterator<JsonNode> iterator = childrenNode.iterator();
-		while (iterator.hasNext()) {
+		for (JsonNode aChildrenNode : childrenNode) {
 			try {
-				JsonNode childNode = iterator.next();
+				JsonNode childNode = aChildrenNode;
 				Entity child = mapper.readValue(childNode.toString(), Entity.class);
 				DefaultMutableTreeNode subTree = new DefaultMutableTreeNode();
 				subTree.setUserObject(child);
 				tree.add(subTree);
 
-				if(childNode.has("children")) {
+				if (childNode.has("children")) {
 					createTree(subTree, (ArrayNode) childNode.get("children"));
 				}
 
@@ -458,10 +450,9 @@ public class BioportalRESTService {
 
 		ArrayNode rootNode = (ArrayNode) jsonToNode(get(entity.getEntityLinks().getTree()));
 
-		Iterator<JsonNode> iterator = rootNode.iterator();
-		while (iterator.hasNext()) {
+		for (JsonNode aRootNode : rootNode) {
 			try {
-				Entity child = mapper.readValue(iterator.next().toString(), Entity.class);
+				Entity child = mapper.readValue(aRootNode.toString(), Entity.class);
 				entities.add(child);
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -477,13 +468,12 @@ public class BioportalRESTService {
 		// [p1[n1_1, ..., entity], p2[], ...]
 		ArrayNode pathsNode = (ArrayNode) jsonToNode(get(entity.getEntityLinks().getSelf() + "/paths_to_root"));
 
-		Iterator<JsonNode> iterator = pathsNode.iterator();
-		while (iterator.hasNext()) {
-			ArrayNode pathNode = (ArrayNode) iterator.next();
+		for (JsonNode aPathsNode : pathsNode) {
+			ArrayNode pathNode = (ArrayNode) aPathsNode;
 			List<Entity> path = new ArrayList<>();
-			for(Iterator<JsonNode> nodeIterator = pathNode.iterator(); nodeIterator.hasNext();) {
+			for (JsonNode aPathNode : pathNode) {
 				try {
-					Entity child = mapper.readValue(nodeIterator.next().toString(), Entity.class);
+					Entity child = mapper.readValue(aPathNode.toString(), Entity.class);
 					path.add(child);
 				} catch (IOException e) {
 					e.printStackTrace();
@@ -496,7 +486,7 @@ public class BioportalRESTService {
 	}
 
 	private static String encodeURI(String text) throws UnsupportedEncodingException {
-		return URLEncoder.encode(text, "UTF-8").toString().replaceAll("\\+", "%20");
+		return URLEncoder.encode(text, "UTF-8").replaceAll("\\+", "%20");
 	}
 
 	public static String getDefaultRestSuffix() {
@@ -525,7 +515,7 @@ public class BioportalRESTService {
 		List<Ontology> ontologies = BioportalRESTService.getOntologies();
 		List<Group> groups = BioportalRESTService.getGroups();
 		List<Category> categories = BioportalRESTService.getCategories();
-		Page page = BioportalRESTService.getSearchResult("heart", Collections.<String>emptyList(), false, false);
+		Page page = BioportalRESTService.getSearchResult("heart", Collections.emptyList(), false, false);
 		List<Entity> entities = page.getEntities();
 		for (Entity entity : entities) {
 			System.out.println(entity.getId());

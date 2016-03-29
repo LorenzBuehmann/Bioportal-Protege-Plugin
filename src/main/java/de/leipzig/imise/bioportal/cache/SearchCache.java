@@ -19,8 +19,8 @@ public class SearchCache {
 
 			for(SearchRequest r : searchCache.keySet()){
 				if(r.getSearchTerm().equals(searchTerm)){
-					if(r.getOntologyIds().contains(request.getOntologyIds())){
-						result = new ArrayList<Entity>();
+					if(r.getOntologyIds().containsAll(request.getOntologyIds())){
+						result = new ArrayList<>();
 						for(Entity bean : searchCache.get(r)){
 							if(request.getOntologyIds().contains(bean.getEntityLinks().getOntology())){
 								result.add(bean);

@@ -7,7 +7,6 @@ import org.protege.editor.owl.OWLEditorKit;
 import org.semanticweb.owlapi.model.*;
 import org.semanticweb.owlapi.model.parameters.Imports;
 import org.semanticweb.owlapi.vocab.OWLRDFVocabulary;
-import org.semanticweb.owlapi.vocab.SKOSVocabulary;
 
 import javax.swing.*;
 import javax.swing.event.PopupMenuEvent;
@@ -20,6 +19,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 import static org.semanticweb.owlapi.vocab.OWLRDFVocabulary.*;
 
@@ -71,9 +71,7 @@ public class DetailsPanel extends JPanel{
 //				return label;
 //			}
 //		});
-		for(OWLProperty p : getApplicableProperties()){
-			comboBox.addItem(p);
-		}
+		getApplicableProperties().forEach(comboBox::addItem);
 		AutoCompleteDecorator.decorate(comboBox);
 		mapToColumn.setCellEditor(new DefaultCellEditor(comboBox));
 
@@ -102,9 +100,7 @@ public class DetailsPanel extends JPanel{
 //				return label;
 //			}
 //		});
-		for(OWLProperty p : getApplicableProperties()){
-			comboBox.addItem(p);
-		}
+		getApplicableProperties().forEach(comboBox::addItem);
 		AutoCompleteDecorator.decorate(comboBox);
 		mapToColumn.setCellEditor(new DefaultCellEditor(comboBox));
 
@@ -122,15 +118,12 @@ public class DetailsPanel extends JPanel{
 
 			@Override
 			public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
-				SwingUtilities.invokeLater(new Runnable() {
-					@Override
-					public void run() {
-						int rowAtPoint = table.rowAtPoint(SwingUtilities.convertPoint(popupMenu, new Point(0, 0), table));
-						table.setValueAt(e.getSource(), rowAtPoint, 3);
-						int colAtPoint = table.columnAtPoint(SwingUtilities.convertPoint(popupMenu, new Point(0, 0), table));
-						if (rowAtPoint > -1) {
-							table.setRowSelectionInterval(rowAtPoint, rowAtPoint);
-						}
+				SwingUtilities.invokeLater(() -> {
+					int rowAtPoint = table.rowAtPoint(SwingUtilities.convertPoint(popupMenu, new Point(0, 0), table));
+					table.setValueAt(e.getSource(), rowAtPoint, 3);
+					int colAtPoint = table.columnAtPoint(SwingUtilities.convertPoint(popupMenu, new Point(0, 0), table));
+					if (rowAtPoint > -1) {
+						table.setRowSelectionInterval(rowAtPoint, rowAtPoint);
 					}
 				});
 			}
@@ -179,9 +172,9 @@ public class DetailsPanel extends JPanel{
 //		properties.addAll(ont.getObjectPropertiesInSignature(Imports.INCLUDED));
 //		properties.addAll(ont.getDataPropertiesInSignature(Imports.INCLUDED));
 		properties.addAll(ont.getAnnotationPropertiesInSignature(Imports.INCLUDED));
-		for(IRI iri : OWLRDFVocabulary.asIRISet(RDFS_LABEL, RDFS_COMMENT, RDFS_SEE_ALSO, RDFS_IS_DEFINED_BY)){
-			properties.add(df.getOWLAnnotationProperty(iri));
-		}
+		properties.addAll(
+				OWLRDFVocabulary.asIRISet(RDFS_LABEL, RDFS_COMMENT, RDFS_SEE_ALSO, RDFS_IS_DEFINED_BY).stream().map(
+						df::getOWLAnnotationProperty).collect(Collectors.toList()));
 		
 		return properties;
 	}
@@ -215,12 +208,6 @@ public class DetailsPanel extends JPanel{
 		return menu;
 	}
 	
-	public Map<String, Set<Object>> getSelectedValues(){
-		Map<String, Set<Object>> selectedValues = new HashMap<String, Set<Object>>();
-
-		return selectedValues;
-	}
-
 	public Map<OWLProperty, String> getSelectedValues(Entity entity){
 		Map<OWLProperty, String> selectedValues = new HashMap<>();
 		EntityDetailsTableModel model = entity2Model.get(entity);
@@ -283,7 +270,7 @@ public class DetailsPanel extends JPanel{
 		frame.setLayout(new BorderLayout());
 		frame.add(main, BorderLayout.CENTER);
 		frame.setSize(new Dimension(400, 400));
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		frame.setVisible(true);
 		
 	}

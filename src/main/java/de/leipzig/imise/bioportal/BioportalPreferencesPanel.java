@@ -62,7 +62,7 @@ public class BioportalPreferencesPanel extends PreferencesPanel{
 		frame.add(panel);
 		frame.setPreferredSize(new Dimension(600, 300));
 		frame.pack();
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		frame.setVisible(true);
 	}
 

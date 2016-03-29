@@ -5,7 +5,6 @@ import org.protege.editor.core.ui.util.NativeBrowserLauncher;
 
 import javax.swing.*;
 import javax.swing.event.HyperlinkEvent;
-import javax.swing.event.HyperlinkListener;
 import java.awt.*;
 import java.util.Map;
 
@@ -13,7 +12,7 @@ public class ConceptDetailsDialog extends DetailsDialog {
 
 	public ConceptDetailsDialog(Entity entity){
 		super();
-		StringBuffer buffer = new StringBuffer();
+		StringBuilder buffer = new StringBuilder();
 		buffer.append("<html><body>");
 		buffer.append("<table width=\"100%\" class=\"servicesT\" style=\"border-collapse:collapse;border-width:0px;padding:5px\"><tr>");
 
@@ -69,11 +68,12 @@ public class ConceptDetailsDialog extends DetailsDialog {
 				}
 				if (text.length() > 0) {
 					buffer.append("<tr>");
-					buffer.append("<td class=\"servBodL\" style=\"background-color:" + color
-							+ ";padding:7px;font-weight: bold;\" >");
+					buffer.append("<td class=\"servBodL\" style=\"background-color:").append(color).append(
+							";padding:7px;font-weight: bold;\" >");
 					buffer.append(property);
 					buffer.append("</td>");
-					buffer.append("<td class=\"servBodL\" style=\"background-color:" + color + ";padding:7px;\" >");
+					buffer.append("<td class=\"servBodL\" style=\"background-color:").append(color).append(
+							";padding:7px;\" >");
 					buffer.append(text);
 					buffer.append("</td>");
 					buffer.append("</tr>");
@@ -99,11 +99,9 @@ public class ConceptDetailsDialog extends DetailsDialog {
 		detailsPane.setText(buffer.toString());
 		detailsPane.setPreferredSize(new Dimension(700, 500));
 
-		detailsPane.addHyperlinkListener(new HyperlinkListener() {
-			public void hyperlinkUpdate(HyperlinkEvent e) {
-				if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
-					NativeBrowserLauncher.openURL(e.getURL().toString());
-				}
+		detailsPane.addHyperlinkListener(e -> {
+			if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
+				NativeBrowserLauncher.openURL(e.getURL().toString());
 			}
 		});
 
