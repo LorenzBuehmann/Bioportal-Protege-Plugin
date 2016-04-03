@@ -16,12 +16,12 @@ import java.awt.*;
  */
 public class EntityTreeCellRenderer extends DefaultTreeCellRenderer {
 
-	private final OWLObjectTreeCellRenderer renderer;
+//	private final OWLObjectTreeCellRenderer renderer;
 	private OWLEditorKit editorKit;
 
 	public EntityTreeCellRenderer(OWLEditorKit editorKit) {
 		this.editorKit = editorKit;
-		renderer = new OWLObjectTreeCellRenderer(editorKit);
+//		renderer = new OWLObjectTreeCellRenderer(editorKit);
 	}
 
 	@Override
@@ -38,10 +38,10 @@ public class EntityTreeCellRenderer extends DefaultTreeCellRenderer {
 			if(userObject instanceof Entity) {
 				Entity entity = (Entity) userObject;
 				label.setText(entity.getPrefLabel());
-				OWLDataFactory df = editorKit.getOWLModelManager().getOWLDataFactory();
-				OWLClass cls = df.getOWLClass(IRI.create(entity.getId()));
-
-				return renderer.getTreeCellRendererComponent(tree, cls, selected, expanded, leaf, row, hasFocus);
+//				OWLDataFactory df = editorKit.getOWLModelManager().getOWLDataFactory();
+//				OWLClass cls = df.getOWLClass(IRI.create(entity.getId()));
+//
+//				return renderer.getTreeCellRendererComponent(tree, cls, selected, expanded, leaf, row, hasFocus);
 			} else {
 				label.setText(userObject.toString());
 			}

@@ -6,6 +6,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
+import org.semanticweb.owlapi.model.IRI;
+import org.semanticweb.owlapi.util.IRIShortFormProvider;
+import org.semanticweb.owlapi.util.ShortFormProvider;
+import org.semanticweb.owlapi.util.SimpleIRIShortFormProvider;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -24,7 +28,7 @@ public class POJO2HTML {
 		int row = 0;
 
 		public HTMLStyle() {
-			setFieldSeparator("</td></tr>" + SystemUtils.LINE_SEPARATOR + "<tr><td style='font-weight: bold;'>");
+			setFieldSeparator("</td></tr>" + SystemUtils.LINE_SEPARATOR + "<tr style='border-bottom: thin solid black;'><td style='font-weight: bold;'>");
 
 			setContentStart("<table id=\"customers\">" + SystemUtils.LINE_SEPARATOR +
 //									"<thead><tr><th>Field</th><th>Data</th></tr></thead>" +
@@ -42,18 +46,20 @@ public class POJO2HTML {
 		}
 
 		private boolean isMetaDataField(String fieldName) {
-			return fieldName.toLowerCase().endsWith("links") || fieldName.equals("@conext");
+			return fieldName.toLowerCase().endsWith("links") || fieldName.equals("@context");
 		}
 
 
 		public void append(final StringBuffer buffer, final String fieldName, final Object value, final Boolean fullDetail) {
 			if(!isMetaDataField(fieldName)) {
-				if(fieldName.equals("additionalProperties")) {
+				if(fieldName.equals("additionalProperties") || fieldName.equals("properties")) {
 					Map<String, Object> map = (Map<String, Object>) value;
 					for (Map.Entry<String,Object> entry : map.entrySet()) {
-						super.append(buffer, entry.getKey(), makeLink(entry.getValue()), fullDetail);
+						append(buffer, entry.getKey(), makeLink(entry.getValue()), fullDetail);
+						row++;
 					}
 				} else {
+					row++;
 					super.append(buffer, fieldName, (value == null) ? null : makeLink(value), fullDetail);
 				}
 
@@ -61,7 +67,7 @@ public class POJO2HTML {
 		}
 
 		private Object makeLink(Object value) {
-			if(value.toString().startsWith("http://")) {
+			if(value != null && value.toString().startsWith("http://")) {
 				return "<a href='" + BioportalRESTService.asBioportalLink(value.toString()) + "'>" + value + "</a>";
 			}
 			return value;
@@ -102,9 +108,33 @@ public class POJO2HTML {
 
 		@Override
 		protected void appendFieldStart(StringBuffer buffer, String fieldName) {
+			IRIShortFormProvider sfp = new SimpleIRIShortFormProvider();
+			try {
+				fieldName = sfp.getShortForm(IRI.create(fieldName));
+			} catch (Exception e) {
+
+			}
+
+			fieldName = fieldName.replace("_", " ");
+
 			// split field name by camel case
-			fieldName = Joiner.on(" ").join(StringUtils.splitByCharacterTypeCamelCase(fieldName)).toLowerCase();
+			String[] split = StringUtils.splitByCharacterTypeCamelCase(fieldName);
+			for (int i = 0; i < split.length; i++) {
+				String token = split[i];
+				// non acronyms to lower case
+				if(!StringUtils.isAllUpperCase(token)) {
+					split[i] = token.toLowerCase();
+				}
+			}
+			fieldName = Joiner.on(" ").join(split);
 			super.appendFieldStart(buffer, fieldName);
+		}
+
+		@Override
+		protected void appendFieldSeparator(StringBuffer buffer) {
+			String color = row % 2 == 0 ? "#E5E5E5" : "#c7d4e5";
+			setFieldSeparator("</td></tr>" + SystemUtils.LINE_SEPARATOR + "<tr style='border-bottom: thin solid black; background-color=" + color + ";'><td style='font-weight: bold;'>");
+			super.appendFieldSeparator(buffer);
 		}
 	}
 }

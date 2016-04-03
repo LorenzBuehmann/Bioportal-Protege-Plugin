@@ -11,10 +11,12 @@ import org.semanticweb.owlapi.vocab.OWLRDFVocabulary;
 import javax.swing.*;
 import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
-import javax.swing.table.TableCellRenderer;
-import javax.swing.table.TableColumn;
-import javax.swing.table.TableColumnModel;
+import javax.swing.table.*;
 import java.awt.*;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.StringSelection;
+import java.awt.event.ActionEvent;
+import java.awt.event.MouseEvent;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -25,11 +27,7 @@ import static org.semanticweb.owlapi.vocab.OWLRDFVocabulary.*;
 
 public class DetailsPanel extends JPanel{
 	
-	private int entryNumber = 0;
-	private int rowNumber = 0;
 	private OWLEditorKit editorKit;
-	
-	private GridBagConstraints gbc = new GridBagConstraints();
 	
 	Map<Entity, EntityDetailsTableModel> entity2Model = new HashMap<>();
 
@@ -80,10 +78,28 @@ public class DetailsPanel extends JPanel{
 		table.getColumnModel().getColumn(0).setMinWidth(25);
 		table.getColumnModel().getColumn(0).setMaxWidth(25);
 		table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+
+
+		table.getColumn(table.getColumnName(3)).setCellRenderer(new DefaultTableCellRenderer() {
+			@Override
+			public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
+														   boolean hasFocus,
+														   int row, int column) {
+				return super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+			}
+		});
 	}
 
 	private void createTable() {
-		table = new JTable();
+		String popupLocation = "table.popupLocation";
+		table = new JTable() {
+			@Override
+			public Point getPopupLocation(MouseEvent event) {
+				((JComponent) event.getComponent()).putClientProperty(
+						popupLocation, event != null ? event.getPoint() : null);
+				return super.getPopupLocation(event);
+			}
+		};
 		table.setShowGrid(false);
 		table.setModel(new EntityDetailsTableModel());
 
@@ -147,7 +163,37 @@ public class DetailsPanel extends JPanel{
 		JScrollPane scrollPane = new JScrollPane(table);
 		table.setFillsViewportHeight(true);
 
+		table.getColumnModel().getColumn(2).setCellRenderer(new MultilineCellRenderer());
+
 		add(scrollPane);
+
+
+		JPopupMenu popup = new JPopupMenu();
+		Action printLocation = new AbstractAction("Copy to clipboard") {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				Point p = (Point) table.getClientProperty(popupLocation);
+				System.out.println(p);
+				if (p != null) { // popup triggered by mouse
+					int row = table.rowAtPoint(p);
+					int column = table.columnAtPoint(p);
+					StringSelection entry = new StringSelection(table.getValueAt(table.convertRowIndexToView(row),
+																				 table.convertRowIndexToView(column)).toString());
+					Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+					clipboard.setContents(entry, entry);
+				} else { // popup triggered otherwise
+					// could choose f.i. by leadRow/ColumnSelection
+				}
+			}
+
+		};
+		popup.add(printLocation);
+		table.setComponentPopupMenu(popup);
+
+
+		table.setAutoCreateRowSorter(true);
+		((TableRowSorter)table.getRowSorter()).sort();
 	}
 
 	private void resizeColumnWidth(JTable table) {
@@ -208,16 +254,17 @@ public class DetailsPanel extends JPanel{
 		return menu;
 	}
 	
-	public Map<OWLProperty, String> getSelectedValues(Entity entity){
+	public Map<OWLProperty, String> getSelectedValues(Entity entity) {
 		Map<OWLProperty, String> selectedValues = new HashMap<>();
 		EntityDetailsTableModel model = entity2Model.get(entity);
-		for(int i = 0; i < model.getRowCount(); i++) {
-			Boolean selectedCol = (Boolean) model.getValueAt(i, 0);
+		for(int row = 0; row < model.getRowCount(); row++) {
+			Boolean selectedCol = (Boolean) model.getValueAt(row, 0);
 			if(selectedCol) {
 				// get property
-				OWLProperty property = (OWLProperty) model.getValueAt(i, 3);
+				OWLProperty property = (OWLProperty) model.getValueAt(row, 3);
+
 				// get value
-				String value = (String) model.getValueAt(i, 2);
+				String value = (String) model.getValueAt(row, 2);
 
 				selectedValues.put(property, value);
 			}
@@ -225,54 +272,23 @@ public class DetailsPanel extends JPanel{
 		return selectedValues;
 	}
 
-	public static void main(String[] args) {
-		GridBagConstraints gbc = new GridBagConstraints();
-		
-		JPanel main  = new JPanel();
-		main.setLayout(new GridBagLayout());
-		
-		gbc.gridy = 0;
-		gbc.gridx = 1;
-		main.add(new JLabel("Koala"), gbc);
-		gbc.gridx = 2;
-		main.add(new JCheckBox(), gbc);
-		gbc.gridy = 1;
-		gbc.gridx = 1;
-		main.add(new JLabel("Koala"), gbc);
-		gbc.gridx = 2;
-		main.add(new JCheckBox(), gbc);
-		gbc.gridx = 0;
-		gbc.gridy = 0;
-		gbc.gridheight = 2;
-		main.add(new JLabel("SubClassOf"), gbc);
-		
-		gbc.gridy = 2;
-		gbc.gridx = 1;
-		main.add(new JLabel("Koala"), gbc);
-		gbc.gridx = 2;
-		main.add(new JCheckBox(), gbc);
-		gbc.gridy = 3;
-		gbc.gridx = 1;
-		main.add(new JLabel("Koala"), gbc);
-		gbc.gridx = 2;
-		main.add(new JCheckBox(), gbc);
-		gbc.gridx = 0;
-		gbc.gridy = 2;
-		gbc.gridheight = 2;
-		main.add(new JLabel("SubClassOf"), gbc);
-		
-		
-		
-		
-		
-		
-		JFrame frame = new JFrame();
-		frame.setLayout(new BorderLayout());
-		frame.add(main, BorderLayout.CENTER);
-		frame.setSize(new Dimension(400, 400));
-		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-		frame.setVisible(true);
-		
-	}
+	public boolean checkTable(Entity entity) {
+		EntityDetailsTableModel model = entity2Model.get(entity);
+		for(int row = 0; row < model.getRowCount(); row++) {
+			Boolean selectedCol = (Boolean) model.getValueAt(row, 0);
+			if(selectedCol) {
+				// get property
+				OWLProperty property = (OWLProperty) model.getValueAt(row, 3);
 
+				if(property == null) {
+					// highlight cell
+
+
+
+					return false;
+				}
+			}
+		}
+		return true;
+	}
 }

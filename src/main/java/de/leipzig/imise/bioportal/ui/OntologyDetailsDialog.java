@@ -14,6 +14,8 @@ import org.protege.editor.core.ui.util.NativeBrowserLauncher;
 public class OntologyDetailsDialog extends DetailsDialog {
 	
 	public OntologyDetailsDialog(Ontology ontology){
+		setTitle("Details for " + ontology.getName() + " (" + ontology.getAcronym() + ")");
+		setModal(true);
 
 		String buffer = POJO2HTML.makeHTML(BioportalRESTService.getOntologySubmission(ontology)) +
 				"<p><b>" + asHTMLLink(ontology.getLinks().getUi(), "Open ontology in Bioportal") +
@@ -37,11 +39,8 @@ public class OntologyDetailsDialog extends DetailsDialog {
 			}
 		});
 
-		JDialog dialog = new JDialog();
-		dialog.setTitle("Details for " + ontology.getName() + " (" + ontology.getAcronym() + ")");
-		dialog.setModal(true);
-		dialog.add(new JScrollPane(detailsPane));
-		dialog.pack();
-		dialog.setVisible(true);
+		add(new JScrollPane(detailsPane));
+		pack();
+		setVisible(true);
 	}
 }

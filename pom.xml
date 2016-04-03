@@ -24,13 +24,13 @@
             <groupId>edu.stanford.protege</groupId>
             <artifactId>protege-editor-core</artifactId>
             <version>${protege.version}</version>
-            <scope>provided</scope>
+            <!--<scope>provided</scope>-->
         </dependency>
         <dependency>
             <groupId>edu.stanford.protege</groupId>
             <artifactId>protege-editor-owl</artifactId>
             <version>${protege.version}</version>
-            <scope>provided</scope>
+            <!--<scope>provided</scope>-->
         </dependency>
 
         <dependency>
@@ -166,6 +166,7 @@
                             <overWriteIfNewer>true</overWriteIfNewer>
                             <excludeTransitive>true</excludeTransitive>
                             <stripVersion>true</stripVersion>
+                            <excludeScope>provided</excludeScope>
                         </configuration>
                     </execution>
                 </executions>

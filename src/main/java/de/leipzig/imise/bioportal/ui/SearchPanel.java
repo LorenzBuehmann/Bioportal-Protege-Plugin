@@ -247,21 +247,16 @@ public class SearchPanel extends JPanel {
 				if (row >= 0 && row <= searchResultTable.getRowCount()){
 					switch(column){
 						case 0:
-//							try {
-//							NativeBrowserLauncher.openURL(getShowConceptInBPString(searchResultTable.getSearchBean(row)));
-//						} catch (UnsupportedEncodingException e2) {
-//							e2.printStackTrace();
-//						}
-							createLazyClassHierarchyTree(searchResultTable.getEntity(row));
-						break;
-						case 2:
-							showOntologyDetailsDialog(searchResultTable.getEntity(row));
-							break;//NativeBrowserLauncher.openURL(getShowOntologyInBPString(searchResultTable.getSearchBean(row)));break;
-						case 4:
 							showConceptDetailsDialog(searchResultTable.getEntity(row));
 							break;
-						case 5:
-//							showModuleAxiomsDialog(searchResultTable.getSearchBean(row));
+						case 1:
+							showConceptDetailsDialog(searchResultTable.getEntity(row));
+							break;
+						case 2:
+							showOntologyDetailsDialog(searchResultTable.getEntity(row));
+							break;
+						case 4:
+							onShowImportsDialog(searchResultTable.getEntity(row));
 							break;
 					}
 					
@@ -305,7 +300,7 @@ public class SearchPanel extends JPanel {
 		new OntologyDetailsDialog(BioportalRESTService.getOntology(entity));
 	}
 	
-	private void createLazyClassHierarchyTree(final Entity entity){
+	private void onShowImportsDialog(final Entity entity){
 //		ClassBean cb = null;
 //		try {
 //			cb = BioportalRESTService.getConceptProperties(entity.getEntityLinks().getUi());

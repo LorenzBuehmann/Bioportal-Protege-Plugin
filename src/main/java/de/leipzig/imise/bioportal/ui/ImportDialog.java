@@ -42,6 +42,7 @@ public class ImportDialog extends JDialog {
 	private final JTree classTree;
 
 	private final WaitLayerUI layerUI = new WaitLayerUI("Loading");
+	private final WaitLayerUI layerUIDetails = new WaitLayerUI("Loading details");
 
 	private Set<OWLAxiom> renderingAxioms = new HashSet<>();
 	private Set<OWLAxiom> addedAxioms = new HashSet<>();
@@ -70,13 +71,15 @@ public class ImportDialog extends JDialog {
 
 		JScrollPane treeScrollPane = new JScrollPane(classTree);
 		treeScrollPane.setPreferredSize(new Dimension(200, 0));
-//		add(new JLayer<JComponent>(treeScrollPane, layerUI), BorderLayout.WEST);
 
-		// the details panel in the right
+		// the details panel on the right
 		detailsPanel = new DetailsPanel(editorKit);
-//		add(detailsPanel, BorderLayout.CENTER);
 
-		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, new JLayer<>(treeScrollPane, layerUI), detailsPanel);
+		JSplitPane splitPane = new JSplitPane(
+				JSplitPane.HORIZONTAL_SPLIT,
+				new JLayer<>(treeScrollPane, layerUI), // left
+				new JLayer<>(detailsPanel, layerUIDetails) // right
+				);
 		splitPane.setDividerLocation(0.3);
 		add(splitPane, BorderLayout.CENTER);
 
@@ -88,18 +91,22 @@ public class ImportDialog extends JDialog {
 		add(southPanel, BorderLayout.SOUTH);
 
 
-		// populate the tree
-		ClassTreeLoadingTask task = new ClassTreeLoadingTask(entity);
-		ProtegeApplication.getBackgroundTaskManager().startTask(task);
-		layerUI.start();
-		task.execute();
-
 		addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosed(WindowEvent e) {
 				onDialogClosed();
 			}
 		});
+
+		// populate the tree
+		populateClassTree(entity);
+	}
+
+	private void populateClassTree(Entity entity) {
+		ClassTreeLoadingTask task = new ClassTreeLoadingTask(entity);
+		ProtegeApplication.getBackgroundTaskManager().startTask(task);
+		layerUI.start();
+		task.execute();
 	}
 
 	private void onDialogClosed() {
@@ -144,22 +151,9 @@ public class ImportDialog extends JDialog {
 		return axioms;
 	}
 
-	private JTree createClassTree(Entity entity, DefaultMutableTreeNode root) {
-//		Collection<Entity> children = BioportalRESTService.getRoots(root);
-//		DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode(root);
-//		if(children != null){
-//			for (Entity child : children) {
-//				Boolean hasChildren = (Boolean) child.getAdditionalProperties().get("hasChildren");
-//				DefaultMutableTreeNode childNode = new DefaultMutableTreeNode(child);
-//				if (hasChildren) {
-//					childNode.add(new DefaultMutableTreeNode("Loading children..."));
-//				}
-//				rootNode.add(childNode);
-//			}
-//		}
-
+	private void fillClassTree(Entity entity, DefaultMutableTreeNode root) {
 		renderingAxioms.addAll(createOntologyFromTree(root));
-		editorKit.getOWLModelManager().getOWLOntologyManager().addAxioms(editorKit.getOWLModelManager().getActiveOntology(), renderingAxioms);
+//		editorKit.getOWLModelManager().getOWLOntologyManager().addAxioms(editorKit.getOWLModelManager().getActiveOntology(), renderingAxioms);
 		((DefaultTreeModel) classTree.getModel()).setRoot(root);
 
 //		JTreeUtils.sortTree(root);
@@ -186,10 +180,7 @@ public class ImportDialog extends JDialog {
 			}
 
 			@Override
-			public void treeWillCollapse(TreeExpansionEvent e) throws ExpandVetoException {
-				// TODO Auto-generated method stub
-
-			}
+			public void treeWillCollapse(TreeExpansionEvent e) throws ExpandVetoException {}
 		});
 
 		// the selection listener
@@ -200,63 +191,39 @@ public class ImportDialog extends JDialog {
 					classTree.repaint();
 					DefaultMutableTreeNode node = (DefaultMutableTreeNode)paths[i].getLastPathComponent();
 					Entity entity1 = (Entity)node.getUserObject();
-//						if(!cb.getRelations().containsKey(ClassBean.SUB_CLASS_PROPERTY)){
-//							setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-////							editorKit.getWorkspace().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-//							new LoadPropertiesWorker(node, searchBean.getOntologyVersionId()).execute();
-//						} else {
-//							onShowDetails(entity);
-//						}
 					onShowDetails(entity1);
-
 					break;
 				} else {
 					// This node has been deselected
 					break;
 				}
 			}
-
 		});
-//		EntityTreeCellRenderer renderer =
-//				(EntityTreeCellRenderer) classTree.getCellRenderer();
-//		renderer.setTextSelectionColor(Color.white);
-//		renderer.setBackgroundSelectionColor(Color.blue);
-//		renderer.setBorderSelectionColor(Color.black);
-//		tree.setCellRenderer(new DefaultTreeCellRenderer(){
-//			@Override
-//			public Component getTreeCellRendererComponent(JTree tree, Object value, boolean sel, boolean expanded,
-//					boolean leaf, int row, boolean hasFocus) {
-//				Component c = super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
-//				
-//				TreePath path = tree.getSelectionPath();
-//				if(path != null){
-//					System.out.println("PATH: " + Arrays.asList(path.getPath()) + " VALUE: " + ((DefaultMutableTreeNode) value));
-//					if(Arrays.asList(path.getPath()).contains(value)){
-//						System.out.println("Contains");
-//						((JLabel)c).setBackground(Color.RED);
-//						c.setBackground(Color.blue);//getBackgroundSelectionColor());
-//					} else {
-//						c.setBackground(getBackgroundNonSelectionColor());
-//					}
-//				}
-//				
-//				return c;
-//			}
-//		});
 
 		classTree.setExpandsSelectedPaths(true);
 		classTree.setSelectionPath(path);
 		classTree.scrollPathToVisible(path);
-
-		return classTree;
 	}
 
+	private void onShowDetails(final Entity entity) {
+		Thread t = new Thread(() -> {
+			try {
+				// get details for entity
+				Entity detailedEntity = BioportalRESTService.getEntityDetails(entity);
+				// show details in UI
+				SwingUtilities.invokeLater(() -> detailsPanel.showDetails(detailedEntity));
+			} catch (Exception e) {
 
-	private void onShowDetails(Entity entity) {
-		// get details for entity
-		entity = BioportalRESTService.getEntityDetails(entity);
+			} finally {
+				// stop the loading indicator
+				SwingUtilities.invokeLater(layerUIDetails::stop);
+			}
+		});
+		// show the loading indicator
+		layerUIDetails.start();
 
-		detailsPanel.showDetails(entity);
+		// start the thread
+		t.start();
 	}
 
 	private void showAxiomsAddedNotification() {
@@ -301,17 +268,18 @@ public class ImportDialog extends JDialog {
 
 			Set<OWLAxiom> axioms2Add = new HashSet<>();
 
-			// get the selected class in Protege -> this will be the super class
-			OWLClass superClass = editorKit.getOWLWorkspace().getOWLSelectionModel().getLastSelectedClass();
-			System.out.println(superClass);
-
 			// convert the selected entity in the tree ->A will be the subclass
 			Entity selectedEntity = (Entity) ((DefaultMutableTreeNode) classTree.getLastSelectedPathComponent()).getUserObject();
 			OWLClass subClass = convert(selectedEntity);
 
+			detailsPanel.checkTable(selectedEntity);
+
 			// get axioms for the selected metadata
 			Set<OWLAxiom> metaDataAxioms = getMetaData(selectedEntity);
 			axioms2Add.addAll(metaDataAxioms);
+
+			// get the selected class in Protege -> this will be the super class
+			OWLClass superClass = editorKit.getOWLWorkspace().getOWLSelectionModel().getLastSelectedClass();
 
 			// create and add the subclass axiom
 			OWLAxiom axiom = dataFactory.getOWLSubClassOfAxiom(subClass, superClass);
@@ -391,6 +359,9 @@ public class ImportDialog extends JDialog {
 		return axioms;
 	}
 
+	/**
+	 * Load the children for the selected entity.
+	 */
 	class ExpandTreeWorker extends SwingWorker<Collection<Entity>, Void> implements BackgroundTask {
 
 		private DefaultMutableTreeNode nodeToExpand;
@@ -404,8 +375,7 @@ public class ImportDialog extends JDialog {
 		@Override
 		protected Collection<Entity> doInBackground() throws Exception {
 			Entity entity = (Entity) nodeToExpand.getUserObject();
-			Collection<Entity> children = BioportalRESTService.getChildren(entity);
-			return children;
+			return BioportalRESTService.getChildren(entity);
 		}
 
 		@Override
@@ -433,14 +403,14 @@ public class ImportDialog extends JDialog {
 				e.printStackTrace();
 			}
 		}
-		
-		
-
 	}
-	
+
+	/**
+	 * The task of loading the class tree.
+	 */
 	class ClassTreeLoadingTask extends SwingWorker<DefaultMutableTreeNode, Void> implements BackgroundTask {
 
-		Entity entity;
+		private Entity entity;
 
 		public ClassTreeLoadingTask(Entity entity) {
 			this.entity = entity;
@@ -455,16 +425,19 @@ public class ImportDialog extends JDialog {
 		protected void done() {
 			layerUI.stop();
 			ProtegeApplication.getBackgroundTaskManager().endTask(this);
-			DefaultMutableTreeNode result;
+
 			try {
-				result = get();
-				createClassTree(entity, result);
+				DefaultMutableTreeNode result = get();
+				fillClassTree(entity, result);
 //				editorKit.getWorkspace().setCursor(Cursor.getDefaultCursor());
 			} catch (InterruptedException | ExecutionException e) {
 				e.printStackTrace();
 			}
 		}
 
+		@Override
+		public String toString() {
+			return "Loading class hierarchy";
+		}
 	}
-
 }

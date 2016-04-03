@@ -32,7 +32,7 @@ public class SearchResultTable extends JXTable {
 				Component c =  super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 				if(column == 0) {
 					JLabel label = (JLabel) c;
-					label.setText("<html>" + label.getText().replaceAll("(?i)" + searchTerm, "<b>" + searchTerm + "</b>") + "</html>");
+					label.setText("<html>" + label.getText().replaceAll("(?i)(" + searchTerm + ")", "<b>$1</b>") + "</html>");
 				}
 				return c;
 			}
@@ -66,14 +66,14 @@ public class SearchResultTable extends JXTable {
         int colIndex = columnAtPoint(p);
         int realColumnIndex = convertColumnIndexToModel(colIndex);
         if(rowIndex >= 0){
-			Entity searchBean = getEntity(rowIndex);
+			Entity entity = getEntity(rowIndex);
 	        
 	        switch(realColumnIndex){
-				case 0: tip = searchBean.getEntityLinks().getUi() + " (click to view in BioPortal)"; break;
-				case 1: tip = searchBean.getPrefLabel(); break;
-				case 2: tip = searchBean.getEntityLinks().getOntology() + " (click to see ontology details)"; break;
-				case 3: tip = "Found term " + searchBean.getId() + " in " + getValueAt(rowIndex, realColumnIndex); break;
-				case 4: tip = "Open the details window for " + searchBean.getPrefLabel(); break;
+				case 0: tip = "ID:" + entity.getId() + " (click to see entity details)"; break;
+				case 1: tip = "Name:" + entity.getPrefLabel() + " (click to see entity details)"; break;
+				case 2: tip = entity.getEntityLinks().getOntology() + " (click to see ontology details)"; break;
+				case 3: tip = "Found term " + entity.getId() + " in " + getValueAt(rowIndex, realColumnIndex); break;
+				case 4: tip = "Go to Import dialog."; break;
 				case 5: tip = ""; break;
 				default: return super.getToolTipText(e);
 	        }

@@ -1,6 +1,5 @@
 package de.leipzig.imise.bioportal.rest;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -19,7 +18,6 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.MutableTreeNode;
 import java.io.*;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.*;
@@ -28,23 +26,17 @@ public class BioportalRESTService {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(BioportalRESTService.class);
 
-	public static final String DEFAULT_BASE_URL = "http://data.bioontology.org";
-	public static final String SUFFIX_ONTOLOGY_VIRTUAL = "virtual/ontology/";
-	public static final String SUFFIX_CONCEPTS = "concepts/";
 	public static final String SEARCH_PROPERTY_ONTOLOGY_IDS = "ontologies=";
 	public static final String SEARCH_PROPERTY_EXACT_MATCH = "isexactmatch";
 	public static final String SEARCH_PROPERTY_INCLUDE_PROPERTIES = "includeproperties";
-	public static final String SEARCH_PROPERTY_OBJECT_TYPES = "objecttypes";
-	public static final String SEARCH_PROPERTY_OBJECT_TYPE_CLASS = "class";
-	public static final String SEARCH_PROPERTY_OBJECT_TYPE_PROPERTY = "property";
-	public static final String SEARCH_PROPERTY_OBJECT_TYPE_INDIVIDUAL = "individual";
-	public static final String PROPERTY_CONCEPT_ID = "conceptid=";
-	public static final String DEFAULT_EMAIL = "email=example@example.org";
 
 	public final static String API_KEY_PARAM = "apikey";	
 	public static final String BP_PRODUCTION_PROTEGE_API_KEY = API_KEY_PARAM + "=8fadfa2c-47de-4487-a1f5-b7af7378d693";
 
 	public static final Set<String> META_PROPERTIES = Sets.newHashSet("links", "@context", "hasChildren", "children");
+	public static final String META_PROPERTY_NS = "http://data.bioontology.org/metadata/";
+
+
 
 	static final ObjectMapper mapper = new ObjectMapper();
 
@@ -142,63 +134,7 @@ public class BioportalRESTService {
 
 		return result;
 	}
-	
-	public static URL getOntologyPropertiesURL(int ontologyId){
-		URL url = null;
-		try {
-			url = new URL(getUrlWithDefaultSuffix(DEFAULT_BASE_URL + SUFFIX_ONTOLOGY_VIRTUAL + ontologyId + "?" + DEFAULT_EMAIL));
-		} catch (MalformedURLException e) {
-			e.printStackTrace();
-		}
-		return url;
-	}
-	
-	public static URL getConceptPropertiesURL(int ontologyVersionId, String conceptId){
-		URL url = null;
-		StringBuilder sb = new StringBuilder();
-		sb.append(DEFAULT_BASE_URL);
-		sb.append(SUFFIX_CONCEPTS);
-		sb.append(ontologyVersionId);
-		sb.append("?");
-		sb.append(PROPERTY_CONCEPT_ID);
-		try {
-			sb.append(encodeURI(conceptId));
-		} catch (UnsupportedEncodingException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-		sb.append("&");
-		sb.append(DEFAULT_EMAIL);
-		try {
-			url = new URL(getUrlWithDefaultSuffix(sb.toString()));
-		} catch (MalformedURLException e) {
-			e.printStackTrace();
-		}
-		return url;
-	}
-	
-	public static URL getConceptPropertiesVirtualURL(int ontologyVirtualId, String conceptId){
-		URL url = null;
-		StringBuilder sb = new StringBuilder();
-		sb.append(DEFAULT_BASE_URL);
-		sb.append(SUFFIX_ONTOLOGY_VIRTUAL);
-		sb.append(ontologyVirtualId);
-		sb.append("?");
-		sb.append(PROPERTY_CONCEPT_ID);
-		try {
-			sb.append(encodeURI(conceptId));
-		} catch (UnsupportedEncodingException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-		try {
-			url = new URL(getUrlWithDefaultSuffix(sb.toString()));
-		} catch (MalformedURLException e) {
-			e.printStackTrace();
-		}
-		return url;
-	}
-	
+
 	private static String getSearchTermString(String searchTerm, List<String> ontologyIds, boolean isExactMatch, boolean includeProperties){
 		StringBuilder sb = new StringBuilder("?");
 
@@ -218,44 +154,6 @@ public class BioportalRESTService {
 		return sb.toString();
 	}
 	
-	private static URL getSearchURL(String searchTerm, List<String> ontologyIds, boolean isExactMatch, boolean includeProperties){
-		URL url = null;
-		try {
-			url = new URL(getUrlWithDefaultSuffix(getSearchTermString(searchTerm, ontologyIds, isExactMatch, includeProperties)));
-		} catch (MalformedURLException e) {
-			e.printStackTrace();
-		}
-		return url;
-	}
-	
-	private static URL getSearchClassesURL(String searchTerm, List<String> ontologyIds, boolean isExactMatch, boolean includeProperties){
-		URL url = null;
-		StringBuilder sb = new StringBuilder(getSearchTermString(searchTerm, ontologyIds, isExactMatch, includeProperties));
-		sb.append("&");
-		sb.append(SEARCH_PROPERTY_OBJECT_TYPES);
-		sb.append("=").append(SEARCH_PROPERTY_OBJECT_TYPE_CLASS);
-		try {
-			url = new URL(getUrlWithDefaultSuffix(sb.toString()));
-		} catch (MalformedURLException e) {
-			e.printStackTrace();
-		}
-		return url;
-	}
-	
-	private static URL getSearchPropertiesURL(String searchTerm, List<String> ontologyIds, boolean isExactMatch, boolean includeProperties){
-		URL url = null;
-		StringBuilder sb = new StringBuilder(getSearchTermString(searchTerm, ontologyIds, isExactMatch, includeProperties));
-		sb.append("&");
-		sb.append(SEARCH_PROPERTY_OBJECT_TYPES);
-		sb.append("=").append(SEARCH_PROPERTY_OBJECT_TYPE_PROPERTY);
-		try {
-			url = new URL(getUrlWithDefaultSuffix(sb.toString()));
-		} catch (MalformedURLException e) {
-			e.printStackTrace();
-		}
-		return url;
-	}
-
 	private static JsonNode jsonToNode(String json) {
 		JsonNode root = null;
 		try {
@@ -385,7 +283,7 @@ public class BioportalRESTService {
 	}
 
 	public static Entity getEntityDetails(Entity entity) {
-		JsonNode node = jsonToNode(get(entity.getEntityLinks().getSelf() + "?include=hasChildren,prefLabel,synonym,definition"));
+		JsonNode node = jsonToNode(get(entity.getEntityLinks().getSelf() + "?include=all"));//hasChildren,prefLabel,synonym,definition"));
 
 		try {
 			Entity detailedEntity = mapper.readValue(node.toString(), Entity.class);
