@@ -6,6 +6,9 @@ import de.leipzig.imise.bioportal.rest.BioportalRESTService;
 import de.leipzig.imise.bioportal.rest.Entity;
 import org.openrdf.model.vocabulary.RDFS;
 import org.openrdf.model.vocabulary.SKOS;
+import org.protege.editor.owl.OWLEditorKit;
+import org.semanticweb.owlapi.model.IRI;
+import org.semanticweb.owlapi.model.OWLAnnotationProperty;
 import org.semanticweb.owlapi.model.OWLProperty;
 
 import javax.swing.table.AbstractTableModel;
@@ -27,21 +30,14 @@ public class EntityDetailsTableModel extends AbstractTableModel{
 	private String[] columnNames = { "", "Property", "Value", "Map To" };
 
 	private List<List<Object>> data = new ArrayList<>();
+	private OWLEditorKit editorKit;
 
-	public EntityDetailsTableModel() {}
+	public EntityDetailsTableModel(OWLEditorKit editorKit) {
+		this.editorKit = editorKit;
+	}
 
-	public EntityDetailsTableModel(Entity entity) {
-//		addRow("ID", entity.getId());
-//		addRow("Preferred Label", entity.getPrefLabel());
-//		if(entity.getDefinition() != null) {
-//			List<String> definitions = entity.getDefinition();
-//			if(!definitions.isEmpty()) {
-//				int i = 1;
-//				for (String definition : definitions) {
-//					addRow("Definition(" + i++ + ")", definition);
-//				}
-//			}
-//		}
+	public EntityDetailsTableModel(OWLEditorKit editorKit, Entity entity) {
+		this(editorKit);
 
 //		Map<String, Object> properties = entity.getAdditionalProperties();
 		Map<String, Object> properties = (Map<String, Object>) entity.getAdditionalProperties().get("properties");
@@ -97,7 +93,9 @@ public class EntityDetailsTableModel extends AbstractTableModel{
 	private void addRow(Object ... values) {
 		List<Object> row = new ArrayList<>(4);
 		row.add(false);
-		row.add(1, values[0]);
+		OWLAnnotationProperty property = editorKit.getOWLModelManager().getOWLDataFactory().getOWLAnnotationProperty(
+				IRI.create(values[0].toString()));
+		row.add(1, property);
 		row.add(2, values[1]);
 		row.add(null);
 		row.add(null);
@@ -134,7 +132,6 @@ public class EntityDetailsTableModel extends AbstractTableModel{
 
 	@Override
 	public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
-		System.out.println("set " + aValue + " at " + rowIndex + "," + columnIndex);
 		data.get(rowIndex).set(columnIndex, aValue);
 		fireTableCellUpdated(rowIndex, columnIndex);
 	}
@@ -143,7 +140,7 @@ public class EntityDetailsTableModel extends AbstractTableModel{
 	public Class<?> getColumnClass(int columnIndex) {
 		switch (columnIndex) {
 			case 0:return Boolean.class;
-			case 1:return String.class;
+			case 1:return OWLProperty.class;
 			case 3:return OWLProperty.class;
 		}
 		return super.getColumnClass(columnIndex);

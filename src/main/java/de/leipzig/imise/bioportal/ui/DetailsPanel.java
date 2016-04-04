@@ -51,7 +51,7 @@ public class DetailsPanel extends JPanel{
 
 		EntityDetailsTableModel model = entity2Model.get(entity);
 		if(model == null) {
-			model = new EntityDetailsTableModel(entity);
+			model = new EntityDetailsTableModel(editorKit, entity);
 			entity2Model.put(entity, model);
 		}
 		table.setModel(model);
@@ -79,6 +79,14 @@ public class DetailsPanel extends JPanel{
 		table.getColumnModel().getColumn(0).setMaxWidth(25);
 		table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
 
+		table.getColumn(table.getColumnName(1)).setCellRenderer(new DefaultTableCellRenderer() {
+			@Override
+			public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
+														   boolean hasFocus,
+														   int row, int column) {
+				return super.getTableCellRendererComponent(table, ((OWLProperty)value).toStringID(), isSelected, hasFocus, row, column);
+			}
+		});
 
 		table.getColumn(table.getColumnName(3)).setCellRenderer(new DefaultTableCellRenderer() {
 			@Override
@@ -101,7 +109,7 @@ public class DetailsPanel extends JPanel{
 			}
 		};
 		table.setShowGrid(false);
-		table.setModel(new EntityDetailsTableModel());
+		table.setModel(new EntityDetailsTableModel(editorKit));
 
 		TableColumn mapToColumn = table.getColumnModel().getColumn(3);
 		JXComboBox comboBox = new JXComboBox();
@@ -262,6 +270,11 @@ public class DetailsPanel extends JPanel{
 			if(selectedCol) {
 				// get property
 				OWLProperty property = (OWLProperty) model.getValueAt(row, 3);
+
+				// if user did not select a different property, we use the one from the data
+				if(property == null) {
+					property = (OWLProperty) model.getValueAt(row, 1);
+				}
 
 				// get value
 				String value = (String) model.getValueAt(row, 2);

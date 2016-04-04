@@ -272,7 +272,7 @@ public class ImportDialog extends JDialog {
 			Entity selectedEntity = (Entity) ((DefaultMutableTreeNode) classTree.getLastSelectedPathComponent()).getUserObject();
 			OWLClass subClass = convert(selectedEntity);
 
-			detailsPanel.checkTable(selectedEntity);
+//			detailsPanel.checkTable(selectedEntity);
 
 			// get axioms for the selected metadata
 			Set<OWLAxiom> metaDataAxioms = getMetaData(selectedEntity);
@@ -288,7 +288,9 @@ public class ImportDialog extends JDialog {
 			OWLAxiomList list = new OWLAxiomList(editorKit);
 			list.setAxioms(axioms2Add);
 			JPanel panel = new JPanel();
-			panel.add(list);
+			panel.setLayout(new BorderLayout());
+			panel.add(list, BorderLayout.CENTER);
+			panel.setPreferredSize(new Dimension(400, 200));
 
 			if(new UIHelper(editorKit).showValidatingDialog(
 					"Add axioms to ontology",

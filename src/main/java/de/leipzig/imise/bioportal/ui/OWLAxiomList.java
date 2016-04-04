@@ -81,7 +81,7 @@ public class OWLAxiomList extends MList{
 	private class AxiomListItemRenderer implements ListCellRenderer {
 
 		private OWLCellRenderer ren = new OWLCellRenderer(editorKit);
-		private OWLAnnotationCellRenderer2 annotationRenderer = new OWLAnnotationCellRenderer2(editorKit);
+		private OWLAnnotationCellRenderer3 annotationRenderer = new OWLAnnotationCellRenderer3(editorKit);
 
 		public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected,
 													  boolean cellHasFocus) {
@@ -95,7 +95,7 @@ public class OWLAxiomList extends MList{
 				if (axiom instanceof OWLAnnotationAssertionAxiom) {
 					OWLAnnotationAssertionAxiom annotationAssertionAxiom = (OWLAnnotationAssertionAxiom) axiom;
 					annotationRenderer.setReferenceOntology(editorKit.getOWLModelManager().getActiveOntology());
-					annotationRenderer.setInlineAnnotationRendering(getRenderAnnotationAnnotationsInline());
+					annotationRenderer.setInlineAnnotationRendering(InlineAnnotationRendering.DO_NOT_RENDER_COMPOUND_ANNOTATIONS_INLINE);//getRenderAnnotationAnnotationsInline());
 					annotationRenderer.setInlineDatatypeRendering(getAnnotationLiteralDatatypeRendering());
 					annotationRenderer.setThumbnailRendering(getInlineThumbnailRendering());
 					return annotationRenderer.getListCellRendererComponent(list,
