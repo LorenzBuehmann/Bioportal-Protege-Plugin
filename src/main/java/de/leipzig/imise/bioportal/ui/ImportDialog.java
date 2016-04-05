@@ -7,7 +7,10 @@ import org.protege.editor.core.ui.progress.BackgroundTask;
 import org.protege.editor.owl.OWLEditorKit;
 import org.protege.editor.owl.ui.UIHelper;
 import org.semanticweb.owlapi.model.*;
+import org.semanticweb.owlapi.vocab.OWLRDFVocabulary;
 import org.semanticweb.owlapi.vocab.SKOSVocabulary;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
 import javax.swing.event.TreeExpansionEvent;
@@ -27,6 +30,8 @@ import java.util.concurrent.TimeUnit;
 import static java.awt.GraphicsDevice.WindowTranslucency.TRANSLUCENT;
 
 public class ImportDialog extends JDialog {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(ImportDialog.class);
 
 	private OWLEditorKit editorKit;
 	private JEditorPane detailsPane;
@@ -114,21 +119,6 @@ public class ImportDialog extends JDialog {
 		editorKit.getOWLModelManager().getOWLOntologyManager().removeAxioms(editorKit.getOWLModelManager().getActiveOntology(), renderingAxioms);
 	}
 
-	private void showAxiomsToAdd(Set<OWLAxiom> axioms) {
-		OWLAxiomList list = new OWLAxiomList(editorKit);
-		list.setAxioms(axioms);
-
-		JDialog dialog = new JDialog(this);
-		dialog.add(list);
-		dialog.setPreferredSize(new Dimension(600, 300));
-		dialog.pack();
-		dialog.setLocationRelativeTo(this);
-		dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
-		dialog.setAlwaysOnTop(true);
-		dialog.setModal(true);
-		dialog.setVisible(true);
-	}
-
 	private Set<OWLAxiom> createOntologyFromTree(DefaultMutableTreeNode root) {
 		OWLDataFactory df = editorKit.getOWLModelManager().getOWLDataFactory();
 
@@ -152,7 +142,7 @@ public class ImportDialog extends JDialog {
 	}
 
 	private void fillClassTree(Entity entity, DefaultMutableTreeNode root) {
-		renderingAxioms.addAll(createOntologyFromTree(root));
+//		renderingAxioms.addAll(createOntologyFromTree(root));
 //		editorKit.getOWLModelManager().getOWLOntologyManager().addAxioms(editorKit.getOWLModelManager().getActiveOntology(), renderingAxioms);
 		((DefaultTreeModel) classTree.getModel()).setRoot(root);
 
@@ -164,6 +154,11 @@ public class ImportDialog extends JDialog {
 		// select the entity node
 		DefaultMutableTreeNode entityNode = JTreeUtils.searchNode((DefaultMutableTreeNode) classTree.getModel().getRoot(), entity);
 		TreePath path = new TreePath(((DefaultTreeModel) classTree.getModel()).getPathToRoot(entityNode));
+
+		classTree.setExpandsSelectedPaths(true);
+		classTree.setSelectionPath(path);
+		classTree.scrollPathToVisible(path);
+
 
 		// expand node action listener
 		classTree.addTreeWillExpandListener(new TreeWillExpandListener() {
@@ -190,8 +185,8 @@ public class ImportDialog extends JDialog {
 				if (e.isAddedPath(i)) {
 					classTree.repaint();
 					DefaultMutableTreeNode node = (DefaultMutableTreeNode)paths[i].getLastPathComponent();
-					Entity entity1 = (Entity)node.getUserObject();
-					onShowDetails(entity1);
+					Entity selectedEntity = (Entity)node.getUserObject();
+					onShowDetails(selectedEntity);
 					break;
 				} else {
 					// This node has been deselected
@@ -200,9 +195,8 @@ public class ImportDialog extends JDialog {
 			}
 		});
 
-		classTree.setExpandsSelectedPaths(true);
-		classTree.setSelectionPath(path);
-		classTree.scrollPathToVisible(path);
+		// show the details for the entity
+		onShowDetails(entity);
 	}
 
 	private void onShowDetails(final Entity entity) {
@@ -292,19 +286,17 @@ public class ImportDialog extends JDialog {
 			panel.add(list, BorderLayout.CENTER);
 			panel.setPreferredSize(new Dimension(400, 200));
 
+			// show axioms that will be added and ask for confirmation first
 			if(new UIHelper(editorKit).showValidatingDialog(
 					"Add axioms to ontology",
 					panel,
 					list) == JOptionPane.OK_OPTION) {
 				// add the axioms
 				ontMan.addAxioms(ontology, axioms2Add);
-				System.out.println("Added axioms:" + axioms2Add);
+				LOGGER.info("Added axioms:" + axioms2Add);
 
 				addedAxioms.addAll(axioms2Add);
 			}
-//			showAxiomsToAdd(axioms2Add);
-
-
 
 //			for (TreePath treePath : selection) {
 //				System.out.println("Path: " + treePath);
@@ -349,13 +341,25 @@ public class ImportDialog extends JDialog {
 
 			OWLAxiom ax;
 			if(property.isOWLAnnotationProperty()) {
-				OWLAnnotation anno = dataFactory.getOWLAnnotation(
-						property.asOWLAnnotationProperty(),
-						dataFactory.getOWLLiteral(value));
+				// workaround here, if property is something from OWL vocabulary
+				if(property.getIRI().equals(OWLRDFVocabulary.OWL_DISJOINT_WITH.getIRI())) {
+					try{
+						OWLClass disCls = dataFactory.getOWLClass(IRI.create(value));
+						ax = dataFactory.getOWLDisjointClassesAxiom(cls, disCls);
 
-				ax = dataFactory.getOWLAnnotationAssertionAxiom(cls.getIRI(), anno);
+						axioms.add(ax);
+					} catch (Exception e) {
+						LOGGER.error("Failed to generate DisjointClasses axiom.", e);
+					}
+				} else {
+					OWLAnnotation anno = dataFactory.getOWLAnnotation(
+							property.asOWLAnnotationProperty(),
+							dataFactory.getOWLLiteral(value));
 
-				axioms.add(ax);
+					ax = dataFactory.getOWLAnnotationAssertionAxiom(cls.getIRI(), anno);
+
+					axioms.add(ax);
+				}
 			}
 		}
 		return axioms;

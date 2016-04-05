@@ -10,6 +10,8 @@ import org.protege.editor.owl.OWLEditorKit;
 import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.model.OWLAnnotationProperty;
 import org.semanticweb.owlapi.model.OWLProperty;
+import org.semanticweb.owlapi.vocab.OWLRDFVocabulary;
+import org.semanticweb.owlapi.vocab.SKOSVocabulary;
 
 import javax.swing.table.AbstractTableModel;
 import java.util.*;
@@ -32,6 +34,8 @@ public class EntityDetailsTableModel extends AbstractTableModel{
 	private List<List<Object>> data = new ArrayList<>();
 	private OWLEditorKit editorKit;
 
+	private boolean labelExists = false;
+
 	public EntityDetailsTableModel(OWLEditorKit editorKit) {
 		this.editorKit = editorKit;
 	}
@@ -39,7 +43,7 @@ public class EntityDetailsTableModel extends AbstractTableModel{
 	public EntityDetailsTableModel(OWLEditorKit editorKit, Entity entity) {
 		this(editorKit);
 
-//		Map<String, Object> properties = entity.getAdditionalProperties();
+		// all properties should be in the 'properties' section of the JSON data
 		Map<String, Object> properties = (Map<String, Object>) entity.getAdditionalProperties().get("properties");
 
 		Map<String, Object> properties2 = new TreeMap<>(new NameSpacePreferenceComparator());
@@ -82,6 +86,17 @@ public class EntityDetailsTableModel extends AbstractTableModel{
 				}
 			}
 		}
+
+		// we should always show a label resp. the preferred label
+		if(!labelExists) {
+			Object value = properties.get(BioportalRESTService.META_PROPERTY_PREF_LABEL);
+			if(value instanceof Collection) {
+				Collection<String> preferredLabels = (Collection<String>) value;
+				if(!preferredLabels.isEmpty()) {
+					addRow(SKOSVocabulary.PREFLABEL.getIRI().toString(), preferredLabels.iterator().next());
+				}
+			}
+		}
 	}
 
 	private boolean canBeIgnored(String relation) {
@@ -93,13 +108,18 @@ public class EntityDetailsTableModel extends AbstractTableModel{
 	private void addRow(Object ... values) {
 		List<Object> row = new ArrayList<>(4);
 		row.add(false);
+		IRI propertyIri = IRI.create(values[0].toString());
 		OWLAnnotationProperty property = editorKit.getOWLModelManager().getOWLDataFactory().getOWLAnnotationProperty(
-				IRI.create(values[0].toString()));
+				propertyIri);
 		row.add(1, property);
 		row.add(2, values[1]);
 		row.add(null);
 		row.add(null);
 		data.add(row);
+
+		if(propertyIri.equals(SKOSVocabulary.PREFLABEL.getIRI()) || propertyIri.equals(OWLRDFVocabulary.RDFS_LABEL.getIRI())) {
+			labelExists = true;
+		}
 	}
 
 	@Override

@@ -39,7 +39,7 @@ public class DetailsPanel extends JPanel{
 		setLayout(new BorderLayout());
 
 		// entity ID
-		label = new JLabel("Entity: ");
+		label = new JLabel("<html><h2><b>Entity:</b> ");
 		add(label, BorderLayout.NORTH);
 
 		// table with properties
@@ -47,7 +47,7 @@ public class DetailsPanel extends JPanel{
 	}
 
 	public void showDetails(Entity entity) {
-		label.setText("Entity: " + entity.getId());
+		label.setText("<html><h4><b>Entity:</b> " + entity.getId() + "</h4></html>");
 
 		EntityDetailsTableModel model = entity2Model.get(entity);
 		if(model == null) {

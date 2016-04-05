@@ -36,6 +36,7 @@ public class BioportalRESTService {
 	public static final Set<String> META_PROPERTIES = Sets.newHashSet("links", "@context", "hasChildren", "children");
 	public static final String META_PROPERTY_NS = "http://data.bioontology.org/metadata/";
 
+	public static final String META_PROPERTY_PREF_LABEL = "http://data.bioontology.org/metadata/def/prefLabel";
 
 
 	static final ObjectMapper mapper = new ObjectMapper();

@@ -275,7 +275,9 @@ public class OWLAnnotationCellRenderer3 extends PageCellRenderer {
                                                Color defaultForeground, Color defaultBackground, boolean isSelected) {
         String subjectRendering = editorKit.getOWLModelManager().getRendering(subject);
         Paragraph paragraph = page.addParagraph(subjectRendering);
-        paragraph.setForeground(Color.ORANGE);
+        paragraph.setForeground(Color.BLACK);
+        paragraph.setBold(true);
+        paragraph.setIcon(getIcon(editorKit.getOWLModelManager().getOWLDataFactory().getOWLClass(IRI.create(subject.toString()))));
 
         paragraph.append("    ", Color.BLUE);
 
